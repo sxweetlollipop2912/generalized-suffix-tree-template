@@ -60,6 +60,7 @@ int main() {
 
         for(int i = 0; i < s.size(); i++) for(int j = 1; j <= s.size() - i; j++) {
                 auto set = tree.search(s.substr(i, j));
+                assert(set.find(idx) != set.end());
                 assert(set.find(idx + sz) != set.end());
             }
     }
