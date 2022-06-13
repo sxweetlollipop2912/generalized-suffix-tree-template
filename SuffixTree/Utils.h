@@ -3,8 +3,11 @@
 #include <string>
 
 namespace Utils {
-    std::string safe_cut_last_char(const std::string &s) {
-        return s.empty() ? "" : s.substr(0, s.size() - 1);
+    template<typename T_Key>
+    KeyInternal<T_Key> safe_cut_last_char(const KeyInternal<T_Key> &s) {
+        if (s.empty())
+            return s;
+        return s.substr(0, s.size() - 1);
     }
 
 //    std::string normalize(const std::string in) {

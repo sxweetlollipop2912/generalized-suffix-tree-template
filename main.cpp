@@ -5,7 +5,7 @@
 #include "SuffixTree/SuffixTree.h"
 
 int main() {
-    SuffixTree tree;
+    SuffixTree<std::string> tree;
 
     std::string words[] = {"libertypike",
                            "franklintn",
@@ -36,35 +36,38 @@ int main() {
                            "bethesdahomeforboys",
                            "bethesda"};
     int sz = 28;
-    for(int idx = 0; idx < sz; idx++) {
+    for (int idx = 0; idx < sz; idx++) {
         auto &s = words[idx];
         tree.put(s, idx);
 
-        for(int i = 0; i < s.size(); i++) for(int j = 1; j <= s.size() - i; j++) {
+        for (int i = 0; i < s.size(); i++)
+            for (int j = 1; j <= s.size() - i; j++) {
                 auto set = tree.search(s.substr(i, j));
                 assert(set.find(idx) != set.end());
             }
     }
 
-    for(int idx = 0; idx < sz; idx++) {
+    for (int idx = 0; idx < sz; idx++) {
         auto &s = words[idx];
-        for(int i = 0; i < s.size(); i++) for(int j = 1; j <= s.size() - i; j++) {
+        for (int i = 0; i < s.size(); i++)
+            for (int j = 1; j <= s.size() - i; j++) {
                 auto set = tree.search(s.substr(i, j));
                 assert(set.find(idx) != set.end());
             }
     }
 
-    for(int idx = 0; idx < sz; idx++) {
+    for (int idx = 0; idx < sz; idx++) {
         auto &s = words[idx];
         tree.put(s, idx + sz);
 
-        for(int i = 0; i < s.size(); i++) for(int j = 1; j <= s.size() - i; j++) {
+        for (int i = 0; i < s.size(); i++)
+            for (int j = 1; j <= s.size() - i; j++) {
                 auto set = tree.search(s.substr(i, j));
                 assert(set.find(idx) != set.end());
                 assert(set.find(idx + sz) != set.end());
             }
     }
 
-    auto set = tree.search("aoca");
+    auto set = tree.search("ypikefra");
     assert(set.empty());
 }

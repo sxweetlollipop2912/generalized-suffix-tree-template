@@ -61,12 +61,13 @@ struct ResultSuffix {
  * This kind of "implicit path" is important in the testAndSplit method.
  *
  */
+template<typename T_Key>
 class SuffixTree {
 private:
     /**
      * The root of the suffix tree
      */
-    Node *const root = new Node;
+    Node<T_Key> *const root = new Node<T_Key>;
     /**
      * The index of the last item that was added to the GST
      */
@@ -74,40 +75,37 @@ private:
     /**
      * The last leaf that was added during the update operation
      */
-    Node *active_leaf;
+    Node<T_Key> *active_leaf;
 
     /**
      * Returns the tree node (if present) that corresponds to the given string.
      */
-    Node const* search_node(const std::string &word) const {
+    Node<T_Key> const *search_node(const KeyInternal<T_Key> &word) const {
         /*
          * Verifies if exists a path from the root to a node such that the concatenation
          * of all the labels on the path is a super string of the given word.
          * If such a path is found, the last node on it is returned.
          */
-        Node const* node = root;
+        Node<T_Key> const *node = root;
 
-        for(int i = 0; i < word.size(); i++) {
-            auto c = word.at(i);
+        for (auto it = word.begin(); it != word.end(); it++) {
             // follow the edge corresponding to this char
-            auto edge = node->get_edge(c);
+            auto edge = node->get_edge(*it);
 
             if (edge) {
-                for(int iw = i, il = 0; iw < word.size() && il < edge->label.size(); iw++, il++)
-                    if (word.at(iw) != edge->label.at(il))
+                for (auto iw = it, il = edge->label.begin(); iw != word.end() && il < edge->label.end(); iw++, il++)
+                    if (*iw != *il)
                         // the label on the edge does not correspond to the one in the string to search
                         return nullptr;
 
-                if (edge->label.size() < word.size() - i) {
+                if (edge->label.size() < word.end() - it) {
                     // advance to next node
                     node = edge->dest();
-                    i += edge->label.size() - 1;
-                }
-                else
+                    it += edge->label.size() - 1;
+                } else
                     // there is no edge starting with this char
                     return edge->dest();
-            }
-            else
+            } else
                 return nullptr;
         }
 
@@ -120,19 +118,16 @@ private:
      * a prefix of input and remainder will be string that must be
      * appended to the concatenation of labels from s to n to get input.
      */
-    std::pair<Node*, std::string> canonize(Node* node, std::string input) {
+    std::pair<Node<T_Key> *, KeyInternal<T_Key>> canonize(Node<T_Key> *node, KeyInternal<T_Key> input) {
         if (!input.empty()) {
-            auto edge = node->get_edge(input[0]);
+            auto edge = node->get_edge(*input.begin());
 
             // descend the tree as long as a proper label is found
-            while (edge && input.size() >= edge->label.size()) {
-                if (input.substr(0, edge->label.size()) == edge->label) {
-                    input = input.substr(edge->label.size());
-                    node = edge->dest();
-                    if (!input.empty())
-                        edge = node->get_edge(input[0]);
-                } else
-                    break;
+            while (edge && input.has_prefix(edge->label)) {
+                input = input.substr(edge->label.size());
+                node = edge->dest();
+                if (!input.empty())
+                    edge = node->get_edge(*input.begin());
             }
         }
 
@@ -159,36 +154,37 @@ private:
      *                  the last node that can be reached by following the path denoted by part starting from input
      *
      */
-    std::pair<bool, Node*> test_and_split(Node* input, const std::string &part, char t, const std::string &remainder, int value) {
+    std::pair<bool, Node<T_Key> *>
+    test_and_split(Node<T_Key> *input, const KeyInternal<T_Key> &part, char t, const KeyInternal<T_Key> &remainder,
+                   int value) {
         // descend the tree as far as possible
-        auto [node, str] = canonize(input, part);
+        auto[node, str] = canonize(input, part);
 
         if (!str.empty()) {
-            auto edge = node->get_edge(str[0]);
+            auto edge = node->get_edge(*str.begin());
             auto &label = edge->label;
 
             // must see whether "str" is substring of the label of an edge
-            if (label.size() > str.size() && label[str.size()] == t)
+            if (label.size() > str.size() && *(label.iter_at(str.size())) == t)
 
                 return std::make_pair(true, node);
             else {
                 // need to split the edge
-                assert(label.substr(0, str.size()) == str);
+                assert(label.has_prefix(str));
                 label = label.substr(str.size());
 
                 // build a new node
-                auto new_node = new Node;
+                auto new_node = new Node<T_Key>;
                 // build a new edge
                 auto new_edge = new Edge(str, new_node);
 
                 // link node -> new_node
-                new_node->add_edge(label[0], *edge);
-                node->add_edge(str[0], *new_edge);
+                new_node->add_edge(*label.begin(), *edge);
+                node->add_edge(*str.begin(), *new_edge);
 
                 return std::make_pair(false, new_node);
             }
-        }
-        else {
+        } else {
             auto edge = node->get_edge(t);
             if (edge) {
                 if (remainder == edge->label) {
@@ -196,29 +192,25 @@ private:
                     edge->dest()->add_ref(value);
 
                     return std::make_pair(true, node);
-                }
-                else if (remainder.substr(0, edge->label.size()) == edge->label) {
+                } else if (remainder.has_prefix(edge->label)) {
 
                     return std::make_pair(true, node);
-                }
-                else if (edge->label.substr(0, remainder.size()) == remainder) {
+                } else if (edge->label.has_prefix(remainder)) {
                     // need to split as above
-                    auto new_node = new Node;
+                    auto new_node = new Node<T_Key>;
                     new_node->add_ref(value);
 
                     auto new_edge = new Edge(remainder, new_node);
                     edge->label = edge->label.substr(remainder.size());
-                    new_node->add_edge(edge->label[0], *edge);
+                    new_node->add_edge(*edge->label.begin(), *edge);
                     node->add_edge(t, *new_edge);
 
                     return std::make_pair(false, node);
-                }
-                else {
+                } else {
                     // they are different words. No prefix. but they may still share some common substr
                     return std::make_pair(true, node);
                 }
-            }
-            else {
+            } else {
                 // if there is no t-transtion from node
                 return std::make_pair(false, node);
             }
@@ -241,19 +233,21 @@ private:
      * @param rest the rest of the string
      * @param value the value to add to the index
      */
-    std::pair<Node*, std::string> update(Node* input_node, const std::string &part, const std::string &rest, int value) {
-        auto &new_char = part.back();
+    std::pair<Node<T_Key> *, KeyInternal<T_Key>>
+    update(Node<T_Key> *input_node, const KeyInternal<T_Key> &part, const char &new_char,
+           const KeyInternal<T_Key> &rest, int value) {
         auto tmp_part = part;
         auto input = input_node;
-        auto [endpoint, node] = test_and_split(input,
-                                               part.substr(0, part.size() - 1),
-                                               new_char,
-                                               rest,
-                                               value);
+
+        auto[endpoint, node] = test_and_split(input,
+                                              part.substr(0, part.size() - 1),
+                                              new_char,
+                                              rest,
+                                              value);
         auto old_root = root;
 
         while (!endpoint) {
-            Node* leaf;
+            Node<T_Key> *leaf;
             auto tmp_edge = node->get_edge(new_char);
             if (tmp_edge)
                 // such a node is already present. This is one of the main differences from Ukkonen's case:
@@ -261,7 +255,7 @@ private:
                 leaf = tmp_edge->dest();
             else {
                 // must build a new leaf
-                leaf = new Node;
+                leaf = new Node<T_Key>;
                 leaf->add_ref(value);
                 node->add_edge(new_char, *(new Edge(rest, leaf)));
             }
@@ -279,18 +273,18 @@ private:
                 assert(root == input);
                 // this is a special case to handle what is referred to as node _|_ on the paper
                 tmp_part = tmp_part.substr(1);
-            }
-            else {
-                auto [node_, str] = canonize(input->get_suffix(), Utils::safe_cut_last_char(tmp_part));
+            } else {
+                auto[node_, str] = canonize(input->get_suffix(),
+                                            Utils::safe_cut_last_char(tmp_part));
                 input = node_;
-                tmp_part = str + tmp_part.back();
+                tmp_part = KeyInternal<T_Key>(str.begin(), ++str.end());
             }
 
-            auto [endpoint_, node_] = test_and_split(input,
-                                                     Utils::safe_cut_last_char(tmp_part),
-                                                     new_char,
-                                                     rest,
-                                                     value);
+            auto[endpoint_, node_] = test_and_split(input,
+                                                    Utils::safe_cut_last_char(tmp_part),
+                                                    new_char,
+                                                    rest,
+                                                    value);
             endpoint = endpoint_;
             node = node_;
         }
@@ -304,7 +298,7 @@ private:
 public:
     SuffixTree() : last{0}, active_leaf{root} {}
 
-    Node const* get_root() const { return root; }
+    Node<T_Key> const *get_root() const { return root; }
 
     /**
      * Searches for the given word within the GST.
@@ -315,7 +309,7 @@ public:
      * @param word the key to search for
      * @return the collection of indexes associated with the input <tt>word</tt>
      */
-    std::set<int> search(const std::string &word) const {
+    std::set<int> search(const T_Key &word) const {
         return search(word, -1);
     }
 
@@ -326,8 +320,8 @@ public:
      * @param count the max number of results to return
      * @return at most <tt>results</tt> values for the given word
      */
-    std::set<int> search(const std::string &word, int count) const {
-        auto tmp = search_node(word);
+    std::set<int> search(const T_Key &word, int count) const {
+        auto tmp = search_node(KeyInternal(word));
 
         if (tmp)
             return tmp->get_data(count);
@@ -342,8 +336,8 @@ public:
      * @return at most <tt>results</tt> values for the given word
      * @see SuffixTree#ResultSuffix
      */
-    ResultSuffix search_with_count(const std::string &word, int count) const {
-        auto tmp = search_node(word);
+    ResultSuffix search_with_count(const T_Key &word, int count) const {
+        auto tmp = search_node(KeyInternal(word));
 
         return tmp ? ResultSuffix(tmp->get_result_count(), tmp->get_data(count)) : ResultSuffix(0, {});
     }
@@ -358,9 +352,10 @@ public:
      * @param idx the value that will be added to the index
      * @throws std::runtime_error if an invalid index is passed as input
      */
-    void put(const std::string &key, int idx) {
+    void put(const T_Key &key, int idx) {
         if (idx < last) {
-            throw std::runtime_error("Input index must not be less than any of the previously inserted ones. Got " + std::to_string(idx) + ", expected at least " + std::to_string(last));
+            throw std::runtime_error("Input index must not be less than any of the previously inserted ones. Got " +
+                                     std::to_string(idx) + ", expected at least " + std::to_string(last));
         }
         last = idx;
 
@@ -370,13 +365,14 @@ public:
         auto node = root;
         // proceed with tree construction (closely related to procedure in
         // Ukkonen's paper)
-        std::string text;
+        KeyInternal<T_Key> key_it(key), text(key_it.begin(), key_it.begin());
         // iterate over the string, one char at a time
-        for(int i = 0; i < key.size(); i++) {
-            text += key.at(i);
+        for (int i = 0; i < key.size(); i++) {
+            text = KeyInternal<T_Key>(text.begin(), ++text.end());
+            auto it = text.end();
 
             // update the tree with the new transitions due to this new char
-            auto active = update(node, text, key.substr(i), idx);
+            auto active = update(node, KeyInternal(text), key[i], key_it.substr(i), idx);
 
             // make sure the active pair is canonical
             active = canonize(active.first, active.second);
