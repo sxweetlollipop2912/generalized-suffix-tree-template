@@ -359,7 +359,7 @@ public:
         }
         last = idx;
 
-        // reset activeLeaf
+        // reset active_leaf
         active_leaf = root;
 
         auto node = root;
@@ -369,7 +369,6 @@ public:
         // iterate over the string, one char at a time
         for (int i = 0; i < key.size(); i++) {
             text = KeyInternal<T_Key>(text.begin(), ++text.end());
-            auto it = text.end();
 
             // update the tree with the new transitions due to this new char
             auto active = update(node, KeyInternal(text), key[i], key_it.substr(i), idx);
