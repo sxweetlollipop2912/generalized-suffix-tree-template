@@ -12,11 +12,12 @@ class Node {
     template<typename T> friend
     class SuffixTree;
 
+    using T_Element = typename T_Key::value_type;
 private:
     static const int START_SIZE = 0;
 
     std::vector<int> data;
-    std::map<char, Edge<T_Key>> edges;
+    std::map<T_Element, Edge<T_Key>> edges;
     Node *suffix;
     int result_count;
 
@@ -61,7 +62,7 @@ protected:
 
 public:
     Node() : suffix{nullptr}, result_count{-1} {
-        edges = std::map<char, Edge<T_Key>>();
+        edges = std::map<T_Element, Edge<T_Key>>();
         data.resize(START_SIZE);
     }
 
@@ -111,17 +112,17 @@ public:
         return this->result_count;
     }
 
-    void add_edge(const char c, const Edge<T_Key> &e) { edges[c] = e; }
+    void add_edge(T_Element c, const Edge<T_Key> &e) { edges[c] = e; }
 
-    Edge<T_Key> const *get_edge(const char c) const {
+    Edge<T_Key> const *get_edge(T_Element c) const {
         return edges.find(c) != edges.end() ? &edges.at(c) : nullptr;
     }
 
-    Edge<T_Key> *get_edge(const char c) {
+    Edge<T_Key> *get_edge(T_Element c) {
         return edges.find(c) != edges.end() ? &edges.at(c) : nullptr;
     }
 
-    std::map<char, Edge<T_Key>> get_edges() const { return edges; }
+    std::map<T_Element, Edge<T_Key>> get_edges() const { return edges; }
 
     Node const *get_suffix() const { return this->suffix; }
 

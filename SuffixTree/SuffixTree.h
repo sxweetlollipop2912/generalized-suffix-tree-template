@@ -63,6 +63,7 @@ struct ResultSuffix {
  */
 template<typename T_Key>
 class SuffixTree {
+    using T_Element = typename T_Key::value_type;
 private:
     /**
      * The root of the suffix tree
@@ -155,17 +156,17 @@ private:
      *
      */
     std::pair<bool, Node<T_Key> *>
-    test_and_split(Node<T_Key> *input, const KeyInternal<T_Key> &part, char t, const KeyInternal<T_Key> &remainder,
+    test_and_split(Node<T_Key> *input, const KeyInternal<T_Key> &part, const T_Element &t, const KeyInternal<T_Key> &remainder,
                    int value) {
         // descend the tree as far as possible
         auto[node, str] = canonize(input, part);
 
         if (!str.empty()) {
-            auto edge = node->get_edge(*str.begin());
+            auto edge = node->get_edge(str.at(0));
             auto &label = edge->label;
 
             // must see whether "str" is substring of the label of an edge
-            if (label.size() > str.size() && *(label.iter_at(str.size())) == t)
+            if (label.size() > str.size() && label.at(str.size()) == t)
 
                 return std::make_pair(true, node);
             else {
@@ -179,8 +180,8 @@ private:
                 auto new_edge = new Edge(str, new_node);
 
                 // link node -> new_node
-                new_node->add_edge(*label.begin(), *edge);
-                node->add_edge(*str.begin(), *new_edge);
+                new_node->add_edge(label.at(0), *edge);
+                node->add_edge(str.at(0), *new_edge);
 
                 return std::make_pair(false, new_node);
             }
@@ -202,7 +203,7 @@ private:
 
                     auto new_edge = new Edge(remainder, new_node);
                     edge->label = edge->label.substr(remainder.size());
-                    new_node->add_edge(*edge->label.begin(), *edge);
+                    new_node->add_edge(edge->label.at(0), *edge);
                     node->add_edge(t, *new_edge);
 
                     return std::make_pair(false, node);
@@ -234,7 +235,7 @@ private:
      * @param value the value to add to the index
      */
     std::pair<Node<T_Key> *, KeyInternal<T_Key>>
-    update(Node<T_Key> *input_node, const KeyInternal<T_Key> &part, const char &new_char,
+    update(Node<T_Key> *input_node, const KeyInternal<T_Key> &part, const T_Element &new_char,
            const KeyInternal<T_Key> &rest, int value) {
         auto tmp_part = part;
         auto input = input_node;
@@ -367,11 +368,11 @@ public:
         // Ukkonen's paper)
         KeyInternal<T_Key> key_it(key), text(key_it.begin(), key_it.begin());
         // iterate over the string, one char at a time
-        for (int i = 0; i < key.size(); i++) {
+        for (int i = 0; i < key_it.size(); i++) {
             text = KeyInternal<T_Key>(text.begin(), ++text.end());
 
             // update the tree with the new transitions due to this new char
-            auto active = update(node, KeyInternal(text), key[i], key_it.substr(i), idx);
+            auto active = update(node, KeyInternal(text), key_it.at(i), key_it.substr(i), idx);
 
             // make sure the active pair is canonical
             active = canonize(active.first, active.second);
