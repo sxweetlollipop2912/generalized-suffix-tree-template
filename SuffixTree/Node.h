@@ -68,19 +68,26 @@ protected:
     }
 
 public:
-    Node() : suffix{std::shared_ptr<Node>(nullptr)}, result_count{-1} {
+    Node() : suffix{}, result_count{-1} {
         edges = Table(DEFAULT_EDGES_SIZE,
-                      [](const T_Element &e, std::size_t size) { return e % size; });
+                      [](const T_Element &e, std::size_t size, const std::function<bool(std::size_t)> &predicate) {
+                          auto idx = e % size;
+                          while (!predicate(idx)) idx = (idx + 1) % size;
+
+                          return idx;
+                      });
         data.resize(DATA_START_SIZE);
     }
 
-    explicit Node(std::function<std::size_t(const T_Element &, std::size_t)> hash) : suffix{nullptr}, result_count{-1} {
+    explicit Node(std::function<std::size_t(const T_Element &, std::size_t)> hash) : suffix{}, result_count{-1} {
         edges = Table(DEFAULT_EDGES_SIZE, hash);
         data.resize(DATA_START_SIZE);
     }
 
-    Node(std::size_t edges_size, std::function<std::size_t(const T_Element &, std::size_t)> hash) : suffix{nullptr},
-                                                                                                    result_count{-1} {
+    Node(std::size_t edges_size, std::function<std::size_t(const T_Element &,
+                                                           std::size_t,
+                                                           const std::function<bool(std::size_t)> &)> hash)
+            : suffix{}, result_count{-1} {
         edges = Table(edges_size, hash);
         data.resize(DATA_START_SIZE);
     }

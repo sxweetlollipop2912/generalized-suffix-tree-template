@@ -63,11 +63,13 @@ struct ResultSuffix {
  */
 template<typename T_Key>
 class SuffixTree {
+    using T_Element = typename T_Key::value_type;
 private:
+    const std::size_t DEFAULT_MAX_CHARS = 26;
     /**
      * The root of the suffix tree
      */
-    std::shared_ptr<Node<T_Key>> const root = std::make_shared<Node<T_Key>>();
+    std::shared_ptr<Node<T_Key>> root;
     /**
      * The index of the last item that was added to the GST
      */
@@ -76,6 +78,38 @@ private:
      * The last leaf that was added during the update operation
      */
     std::shared_ptr<Node<T_Key>> active_leaf;
+
+    /**
+     * Max number of characters.
+     */
+    std::size_t max_chars;
+    /**
+     * Load factor for hash table on each node.
+     */
+    const double LOAD_FACTOR = 0.8;
+    /**
+     * Size of hash table on each node.
+     */
+    std::size_t hash_size;
+    /**
+     * Hashing function used on chars.
+     */
+    std::function<std::size_t(const T_Element &, std::size_t, const std::function<bool(std::size_t)> &)> hash;
+
+    std::shared_ptr<Node<T_Key>> make_node() { return std::make_shared<Node<T_Key>>(hash_size, hash); }
+
+    void init() {
+        hash_size = (double) max_chars / LOAD_FACTOR;
+        hash_size += 1 - (hash_size & 1);
+        hash = [](const T_Element &key, std::size_t size, const std::function<bool(std::size_t)> &predicate) {
+            auto idx = key % size;
+            while (!predicate(idx)) idx = (idx + 1) % size;
+
+            return idx;
+        };
+
+        root = make_node();
+    }
 
     /**
      * Returns the tree node (if present) that corresponds to the given string.
@@ -176,7 +210,7 @@ private:
                 label = label.substr(str.size());
 
                 // build a new node
-                auto new_node = std::make_shared<Node<T_Key>>();
+                auto new_node = make_node();
                 // build a new edge
                 auto new_edge = std::make_shared<Edge<T_Key>>(str, new_node);
 
@@ -199,7 +233,7 @@ private:
                     return std::make_pair(true, node);
                 } else if (edge->label.has_prefix(remainder)) {
                     // need to split as above
-                    auto new_node = std::make_shared<Node<T_Key>>();
+                    auto new_node = make_node();
                     new_node->add_ref(value);
 
                     auto new_edge = std::make_shared<Edge<T_Key>>(remainder, new_node);
@@ -257,7 +291,7 @@ private:
                 leaf = tmp_edge->dest();
             else {
                 // must build a new leaf
-                leaf = std::make_shared<Node<T_Key>>();
+                leaf = make_node();
                 leaf->add_ref(value);
                 node->add_edge(new_char, std::make_shared<Edge<T_Key>>(rest, leaf));
             }
@@ -298,7 +332,10 @@ private:
     }
 
 public:
-    SuffixTree() : last{0}, active_leaf{root} {}
+    SuffixTree() : last{0}, active_leaf{root}, max_chars{DEFAULT_MAX_CHARS}, hash_size{1} { init(); }
+
+    explicit SuffixTree(std::size_t max_chars) : last{0}, active_leaf{root}, max_chars{max_chars},
+                                                 hash_size{1} { init(); }
 
     std::shared_ptr<Node<T_Key> const> get_root() const { return root; }
 
