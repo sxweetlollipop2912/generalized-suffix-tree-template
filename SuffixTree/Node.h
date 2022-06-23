@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 #include <stdexcept>
+#include <functional>
 
 #include "Edge.h"
 
@@ -17,12 +18,16 @@ private:
     static const int START_SIZE = 0;
 
     std::vector<int> data;
-    std::map<T_Element, Edge<T_Key>> edges;
-    Node *suffix;
+
+    std::function<std::size_t(const T_Element&)> map_to_idx;
+    std::vector <std::shared_ptr<Edge<T_Key>>> edges;
+
+    /// Use weak_ptr instead of shared_ptr to avoid shared_ptr cyclic dependency.
+    std::weak_ptr<Node> suffix;
     int result_count;
 
     bool contains(int idx) const {
-        int low = 0, high = data.size() - 1;
+        int low = 0, high = (int)data.size() - 1;
 
         while (low < high) {
             int mid = (low + high) >> 1;
@@ -40,9 +45,11 @@ private:
         std::set<int> set;
 
         for (auto &num: data) { set.insert(num); }
-        for (auto &[_, e]: edges) {
-            for (auto &num: e.dest()->compute_and_cache_count_recursive()) {
-                set.insert(num);
+        for (auto &e: edges) {
+            if (e) {
+                for (auto &num: e->dest()->compute_and_cache_count_recursive()) {
+                    set.insert(num);
+                }
             }
         }
 
@@ -61,9 +68,15 @@ protected:
     }
 
 public:
-    Node() : suffix{nullptr}, result_count{-1} {
-        edges = std::map<T_Element, Edge<T_Key>>();
+    Node() : suffix{std::shared_ptr<Node>(nullptr)}, result_count{-1} {
+        map_to_idx = [](const T_Element &e) { return (std::size_t)e; };
         data.resize(START_SIZE);
+        edges.clear();
+    }
+    explicit Node(std::function<std::size_t(const T_Element&)> map_func) : suffix{nullptr}, result_count{-1} {
+        map_to_idx = map_func;
+        data.resize(START_SIZE);
+        edges.clear();
     }
 
     std::set<int> get_data() const {
@@ -80,9 +93,9 @@ public:
                 break;
         }
 
-        for (auto &[_, e]: edges) {
-            if (count < 0 || set.size() < count) {
-                for (auto &num: e.dest()->get_data(count - (int) set.size())) {
+        for (auto &e: edges) {
+            if (e && (count < 0 || set.size() < count)) {
+                for (auto &num: e->dest()->get_data(count - (int) set.size())) {
                     set.insert(num);
                     if (set.size() == count)
 
@@ -99,7 +112,7 @@ public:
             return;
 
         add_index(idx);
-        for (auto iter = this->suffix; iter != nullptr && !iter->contains(idx); iter = iter->suffix) {
+        for (auto iter = this->suffix.lock(); iter != nullptr && !iter->contains(idx); iter = iter->suffix.lock()) {
             iter->add_ref(idx);
         }
     }
@@ -112,21 +125,29 @@ public:
         return this->result_count;
     }
 
-    void add_edge(T_Element c, const Edge<T_Key> &e) { edges[c] = e; }
-
-    Edge<T_Key> const *get_edge(T_Element c) const {
-        return edges.find(c) != edges.end() ? &edges.at(c) : nullptr;
+    void add_edge(const T_Element &c, std::shared_ptr<Edge<T_Key>> e) {
+        auto idx = map_to_idx(c);
+        if (idx >= edges.size()) edges.resize(idx + 1, nullptr);
+        edges[idx] = e;
     }
 
-    Edge<T_Key> *get_edge(T_Element c) {
-        return edges.find(c) != edges.end() ? &edges.at(c) : nullptr;
+    std::shared_ptr<Edge<T_Key> const> get_edge(const T_Element &c) const {
+        auto idx = map_to_idx(c);
+        auto re = edges.size() > idx ? edges.at(idx) : nullptr;
+
+        return re;
     }
 
-    std::map<T_Element, Edge<T_Key>> get_edges() const { return edges; }
+    std::shared_ptr<Edge<T_Key>> get_edge(const T_Element &c) {
+        auto idx = map_to_idx(c);
+        auto re = edges.size() > idx ? edges.at(idx) : nullptr;
 
-    Node const *get_suffix() const { return this->suffix; }
+        return re;
+    }
 
-    Node *get_suffix() { return this->suffix; }
+    std::shared_ptr<Node const> get_suffix() const { return this->suffix.lock(); }
 
-    void set_suffix(Node *const suffix) { this->suffix = suffix; }
+    std::shared_ptr<Node> get_suffix() { return this->suffix.lock(); }
+
+    void set_suffix(std::shared_ptr<Node> const suffix) { this->suffix = suffix; }
 };
