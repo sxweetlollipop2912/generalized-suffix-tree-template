@@ -51,9 +51,10 @@ public:
     }
 
     inline KeyConstIterator iter_at(int idx) const { return this->begin() + idx; }
+
     inline T_Element at(int idx) const { return *(this->begin() + idx); }
 
-    inline std::size_t size(std::size_t from_idx = 0) const {
+    [[nodiscard]] inline std::size_t size(std::size_t from_idx = 0) const {
         const auto begin = std::next(this->begin(), from_idx);
         const auto end = this->end();
         if (end <= begin) {
@@ -63,7 +64,7 @@ public:
         return end - begin;
     }
 
-    inline bool empty() const {
+    [[nodiscard]] inline bool empty() const {
         return this->begin() >= this->end();
     }
 
@@ -108,7 +109,7 @@ public:
         return iters.second == prefix_end;
     }
 
-    std::string debug(std::size_t pos = 0) const {
+    [[nodiscard]] std::string debug(std::size_t pos = 0) const {
         const auto key_start = std::next(this->begin(), pos);
         const auto key_end = this->end();
         if (key_end <= key_start) {

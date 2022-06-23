@@ -7,6 +7,7 @@
 #include <functional>
 
 #include "Edge.h"
+#include "HashTable.h"
 
 template<typename T_Key>
 class Node {
@@ -15,23 +16,22 @@ class Node {
 
     using T_Element = typename T_Key::value_type;
 private:
-    static const int START_SIZE = 0;
+    using Table = HashTable<T_Element, std::shared_ptr<Edge<T_Key>>>;
+    static const int DATA_START_SIZE = 0;
+    static const int DEFAULT_EDGES_SIZE = 53;
 
     std::vector<int> data;
 
-    std::function<std::size_t(const T_Element&)> map_to_idx;
-    std::vector <std::shared_ptr<Edge<T_Key>>> edges;
+    Table edges;
 
     /// Use weak_ptr instead of shared_ptr to avoid shared_ptr cyclic dependency.
     std::weak_ptr<Node> suffix;
     int result_count;
 
-    bool contains(int idx) const {
-        int low = 0, high = (int)data.size() - 1;
-
+    [[nodiscard]] bool contains(int idx) const {
+        int low = 0, high = (int) data.size() - 1;
         while (low < high) {
             int mid = (low + high) >> 1;
-
             if (idx > data[mid])
                 low = mid + 1;
             else
@@ -43,17 +43,17 @@ private:
 
     std::set<int> compute_and_cache_count_recursive() {
         std::set<int> set;
-
         for (auto &num: data) { set.insert(num); }
-        for (auto &e: edges) {
+
+        auto vec = edges.get_all();
+        for (auto &[_, e]: vec) {
             if (e) {
                 for (auto &num: e->dest()->compute_and_cache_count_recursive()) {
                     set.insert(num);
                 }
             }
         }
-
-        result_count = set.size();
+        result_count = (int) set.size();
 
         return set;
     }
@@ -69,21 +69,27 @@ protected:
 
 public:
     Node() : suffix{std::shared_ptr<Node>(nullptr)}, result_count{-1} {
-        map_to_idx = [](const T_Element &e) { return (std::size_t)e; };
-        data.resize(START_SIZE);
-        edges.clear();
-    }
-    explicit Node(std::function<std::size_t(const T_Element&)> map_func) : suffix{nullptr}, result_count{-1} {
-        map_to_idx = map_func;
-        data.resize(START_SIZE);
-        edges.clear();
+        edges = Table(DEFAULT_EDGES_SIZE,
+                      [](const T_Element &e, std::size_t size) { return e % size; });
+        data.resize(DATA_START_SIZE);
     }
 
-    std::set<int> get_data() const {
+    explicit Node(std::function<std::size_t(const T_Element &, std::size_t)> hash) : suffix{nullptr}, result_count{-1} {
+        edges = Table(DEFAULT_EDGES_SIZE, hash);
+        data.resize(DATA_START_SIZE);
+    }
+
+    Node(std::size_t edges_size, std::function<std::size_t(const T_Element &, std::size_t)> hash) : suffix{nullptr},
+                                                                                                    result_count{-1} {
+        edges = Table(edges_size, hash);
+        data.resize(DATA_START_SIZE);
+    }
+
+    [[nodiscard]] std::set<int> get_data() const {
         return get_data(-1);
     }
 
-    std::set<int> get_data(int count) const {
+    [[nodiscard]] std::set<int> get_data(int count) const {
         std::set<int> set;
 
         for (auto &num: data) {
@@ -93,7 +99,8 @@ public:
                 break;
         }
 
-        for (auto &e: edges) {
+        auto vec = edges.get_all();
+        for (auto &[_, e]: vec) {
             if (e && (count < 0 || set.size() < count)) {
                 for (auto &num: e->dest()->get_data(count - (int) set.size())) {
                     set.insert(num);
@@ -117,7 +124,7 @@ public:
         }
     }
 
-    int get_result_count() const {
+    [[nodiscard]] int get_result_count() const {
         if (this->result_count == -1) {
             throw std::runtime_error("get_result_count() shouldn't be called without calling compute_count() first");
         }
@@ -125,24 +132,14 @@ public:
         return this->result_count;
     }
 
-    void add_edge(const T_Element &c, std::shared_ptr<Edge<T_Key>> e) {
-        auto idx = map_to_idx(c);
-        if (idx >= edges.size()) edges.resize(idx + 1, nullptr);
-        edges[idx] = e;
-    }
+    void add_edge(const T_Element &c, std::shared_ptr<Edge<T_Key>> e) { edges[c] = e; }
 
     std::shared_ptr<Edge<T_Key> const> get_edge(const T_Element &c) const {
-        auto idx = map_to_idx(c);
-        auto re = edges.size() > idx ? edges.at(idx) : nullptr;
-
-        return re;
+        return edges.contains(c) ? edges.at(c) : nullptr;
     }
 
     std::shared_ptr<Edge<T_Key>> get_edge(const T_Element &c) {
-        auto idx = map_to_idx(c);
-        auto re = edges.size() > idx ? edges.at(idx) : nullptr;
-
-        return re;
+        return edges.contains(c) ? edges.at(c) : nullptr;
     }
 
     std::shared_ptr<Node const> get_suffix() const { return this->suffix.lock(); }
