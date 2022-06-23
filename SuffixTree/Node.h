@@ -16,7 +16,7 @@ class Node {
 
     using T_Element = typename T_Key::value_type;
 private:
-    using Table = HashTable <T_Element, std::shared_ptr<Edge<T_Key>>>;
+    using Table = HashTable<T_Element, std::shared_ptr<Edge<T_Key>>>;
     static const int DATA_START_SIZE = 0;
     static const int DEFAULT_EDGES_SIZE = 53;
 
@@ -29,7 +29,7 @@ private:
     int result_count;
 
     [[nodiscard]] bool contains(int idx) const {
-        int low = 0, high = (int)data.size() - 1;
+        int low = 0, high = (int) data.size() - 1;
         while (low < high) {
             int mid = (low + high) >> 1;
             if (idx > data[mid])
@@ -53,7 +53,7 @@ private:
                 }
             }
         }
-        result_count = (int)set.size();
+        result_count = (int) set.size();
 
         return set;
     }
@@ -73,11 +73,14 @@ public:
                       [](const T_Element &e, std::size_t size) { return e % size; });
         data.resize(DATA_START_SIZE);
     }
-    explicit Node(std::function<std::size_t(const T_Element&, std::size_t)> hash) : suffix{nullptr}, result_count{-1} {
+
+    explicit Node(std::function<std::size_t(const T_Element &, std::size_t)> hash) : suffix{nullptr}, result_count{-1} {
         edges = Table(DEFAULT_EDGES_SIZE, hash);
         data.resize(DATA_START_SIZE);
     }
-    Node(std::size_t edges_size, std::function<std::size_t(const T_Element&, std::size_t)> hash) : suffix{nullptr}, result_count{-1} {
+
+    Node(std::size_t edges_size, std::function<std::size_t(const T_Element &, std::size_t)> hash) : suffix{nullptr},
+                                                                                                    result_count{-1} {
         edges = Table(edges_size, hash);
         data.resize(DATA_START_SIZE);
     }

@@ -118,7 +118,8 @@ private:
      * a prefix of input and remainder will be string that must be
      * appended to the concatenation of labels from s to n to get input.
      */
-    std::pair<std::shared_ptr<Node<T_Key>>, KeyInternal<T_Key>> canonize(std::shared_ptr<Node<T_Key>> node, KeyInternal<T_Key> input) {
+    std::pair<std::shared_ptr<Node<T_Key>>, KeyInternal<T_Key>>
+    canonize(std::shared_ptr<Node<T_Key>> node, KeyInternal<T_Key> input) {
         if (!input.empty()) {
             auto edge = node->get_edge(*input.begin());
 
@@ -155,7 +156,8 @@ private:
      *
      */
     std::pair<bool, std::shared_ptr<Node<T_Key>>>
-    test_and_split(std::shared_ptr<Node<T_Key>> input, const KeyInternal<T_Key> &part, char t, const KeyInternal<T_Key> &remainder,
+    test_and_split(std::shared_ptr<Node<T_Key>> input, const KeyInternal<T_Key> &part, char t,
+                   const KeyInternal<T_Key> &remainder,
                    int value) {
         // descend the tree as far as possible
         auto[node, str] = canonize(input, part);

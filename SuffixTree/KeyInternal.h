@@ -51,6 +51,7 @@ public:
     }
 
     inline KeyConstIterator iter_at(int idx) const { return this->begin() + idx; }
+
     inline T_Element at(int idx) const { return *(this->begin() + idx); }
 
     [[nodiscard]] inline std::size_t size(std::size_t from_idx = 0) const {
