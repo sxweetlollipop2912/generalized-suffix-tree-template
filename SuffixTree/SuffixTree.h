@@ -211,7 +211,7 @@ private:
                     return std::make_pair(true, node);
                 }
             } else {
-                // if there is no t-transtion from node
+                // if there is no t-transition from node
                 return std::make_pair(false, node);
             }
         }

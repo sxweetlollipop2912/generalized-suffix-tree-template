@@ -21,7 +21,7 @@ public:
 
     void set_dest(std::shared_ptr<Node<T_Key>> node) { dest_ = node; }
 
-    std::shared_ptr<Node<T_Key>> const dest() const { return dest_; }
+    std::shared_ptr<Node<T_Key> const> dest() const { return dest_; }
 
     std::shared_ptr<Node<T_Key>> dest() { return dest_; }
 };

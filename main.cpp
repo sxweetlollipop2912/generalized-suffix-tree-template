@@ -3,6 +3,7 @@
 #include "SuffixTree/Edge.h"
 #include "SuffixTree/Node.h"
 #include "SuffixTree/SuffixTree.h"
+#include "SuffixTree/HashTable.h"
 
 int main() {
     SuffixTree<std::string> tree;
