@@ -1,76 +1,89 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+#include <chrono>
 
 #include "SuffixTree/SuffixTree.h"
 
+using std::chrono::high_resolution_clock;
+using std::chrono::duration_cast;
+using std::chrono::duration;
+using std::chrono::milliseconds;
+
 void test_speed() {
     srand(time(nullptr));
-    int sz = 1000;
-    int max_len = 2000;
+    int sz = 7500;
+    int max_len = 200;
+    int test = 30;
     std::cout << "Configuration: " << sz << " strings, " << max_len << " chars max. 26 lowercase letters.\n";
-    std::cout << "Generating strings. Counting starts after char count is printed.\n";
+
+    double avg = 0, avg_cnt = 0;
+    for (int t = 1; t <= test; t++) {
+        std::cout << "TIME " << t << '\n';
+
+        SuffixTree<std::string> tree;
+
+        std::vector<std::string> words;
+        int cnt = 0;
+        for (int i = 0; i < sz; i++) {
+            int len = rand() % max_len + 1;
+            words.emplace_back();
+            for (int j = 0; j < len; j++) {
+                char c = rand() % 26 + 'a';
+                words.back() += c;
+            }
+
+            cnt += len;
+        }
+
+        std::cout << cnt << '\n';
+        avg_cnt += cnt;
+
+        auto t1 = high_resolution_clock::now();
+
+        for (int idx = 0; idx < sz; idx++) {
+            auto &s = words[idx];
+            tree.put(s, idx);
+        }
+
+        auto t2 = high_resolution_clock::now();
+        /* Getting number of milliseconds as a double. */
+        duration<double, std::milli> ms_double = t2 - t1;
+        std::cout << ms_double.count() << "ms\n";
+        avg += ms_double.count();
+    }
+
+    avg /= (double) test;
+    avg_cnt /= (double) test;
+    std::cout << "AVG " << avg << "ms " << avg_cnt << "\n";
+}
+
+void test_correctness() {
+    srand(time(nullptr));
+    int sz = 30;
+    int max_len = 200;
+    std::cout << "Configuration: " << sz << " strings, " << max_len << " chars max. 26 lowercase letters.\n";
+    std::cout << "Generating strings. Tree building starts after last idx (" << sz << ") is printed.\n";
 
     SuffixTree<std::string> tree;
 
-    std::vector <std::string> words;
+    std::vector<std::string> words;
     int cnt = 0;
-    for(int i = 0; i < sz; i++) {
+    for (int i = 0; i < sz; i++) {
         int len = rand() % max_len + 1;
         words.emplace_back();
-        for(int j = 0; j < len; j++) {
+        for (int j = 0; j < len; j++) {
             char c = rand() % 26 + 'a';
             words.back() += c;
         }
 
         cnt += len;
 
-        //std::cout << i + 1 << ' ' << words[i] << '\n';
+        std::cout << i + 1 << '\n';
     }
 
-    std::cout << cnt;
+    std::cout << cnt << '\n';
 
-    for (int idx = 0; idx < sz; idx++) {
-        auto &s = words[idx];
-        tree.put(s, idx);
-
-        auto set = tree.search(s);
-        assert(set.find(idx) != set.end());
-    }
-}
-
-void test_correctness() {
-    SuffixTree<std::string> tree;
-
-    std::string words[] = {"libertypike",
-                           "franklintn",
-                           "carothersjohnhenryhouse",
-                           "carothersezealhouse",
-                           "acrossthetauntonriverfromdightonindightonrockstatepark",
-                           "dightonma",
-                           "dightonrock",
-                           "6mineoflowgaponlowgapfork",
-                           "lowgapky",
-                           "lemasterjohnjandellenhouse",
-                           "lemasterhouse",
-                           "70wilburblvd",
-                           "poughkeepsieny",
-                           "freerhouse",
-                           "701laurelst",
-                           "conwaysc",
-                           "hollidayjwjrhouse",
-                           "mainandappletonsts",
-                           "menomoneefallswi",
-                           "mainstreethistoricdistrict",
-                           "addressrestricted",
-                           "brownsmillsnj",
-                           "hanoverfurnace",
-                           "hanoverbogironfurnace",
-                           "sofsavannahatfergusonaveandbethesdard",
-                           "savannahga",
-                           "bethesdahomeforboys",
-                           "bethesda"};
-    int sz = 28;
     for (int idx = 0; idx < sz; idx++) {
         auto &s = words[idx];
         tree.put(s, idx);
@@ -102,12 +115,9 @@ void test_correctness() {
                 assert(set.find(idx + sz) != set.end());
             }
     }
-
-    auto set = tree.search("ypikefra");
-    assert(set.empty());
 }
 
 int main() {
-    //test_speed();
-    test_correctness();
+    test_speed();
+    //test_correctness();
 }
