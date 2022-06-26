@@ -66,10 +66,12 @@ class SuffixTree {
     using T_Element = typename T_Key::value_type;
 private:
     const std::size_t DEFAULT_MAX_CHARS = 26;
+    std::vector<Node<T_Key> *> all_nodes;
+    std::vector<Edge<T_Key> *> all_edges;
     /**
      * The root of the suffix tree
      */
-    std::shared_ptr<Node<T_Key>> root;
+    Node<T_Key> *root;
     /**
      * The index of the last item that was added to the GST
      */
@@ -77,7 +79,7 @@ private:
     /**
      * The last leaf that was added during the update operation
      */
-    std::shared_ptr<Node<T_Key>> active_leaf;
+    Node<T_Key> *active_leaf;
 
     /**
      * Max number of characters.
@@ -96,7 +98,15 @@ private:
      */
     std::function<std::size_t(const T_Element &, std::size_t, const std::function<bool(std::size_t)> &)> hash;
 
-    std::shared_ptr<Node<T_Key>> make_node() { return std::make_shared<Node<T_Key>>(hash_size, hash); }
+    Node<T_Key> *make_node() {
+        all_nodes.push_back(new Node<T_Key>(hash_size, hash));
+        return all_nodes.back();
+    }
+
+    Edge<T_Key> *make_edge(const KeyInternal<T_Key> &label, Node<T_Key> *dest) {
+        all_edges.push_back(new Edge<T_Key>(label, dest));
+        return all_edges.back();
+    }
 
     void init() {
         hash_size = (double) max_chars / LOAD_FACTOR;
@@ -109,12 +119,13 @@ private:
         };
 
         root = make_node();
+        active_leaf = root;
     }
 
     /**
      * Returns the tree node (if present) that corresponds to the given string.
      */
-    std::shared_ptr<Node<T_Key> const> search_node(const KeyInternal<T_Key> &word) const {
+    Node<T_Key> const *search_node(const KeyInternal<T_Key> &word) const {
         /*
          * Verifies if exists a path from the root to a node such that the concatenation
          * of all the labels on the path is a super string of the given word.
@@ -152,8 +163,8 @@ private:
      * a prefix of input and remainder will be string that must be
      * appended to the concatenation of labels from s to n to get input.
      */
-    std::pair<std::shared_ptr<Node<T_Key>>, KeyInternal<T_Key>>
-    canonize(std::shared_ptr<Node<T_Key>> node, KeyInternal<T_Key> input) {
+    std::pair<Node<T_Key> *, KeyInternal<T_Key>>
+    canonize(Node<T_Key> *node, KeyInternal<T_Key> input) {
         if (!input.empty()) {
             auto edge = node->get_edge(*input.begin());
 
@@ -189,8 +200,8 @@ private:
      *                  the last node that can be reached by following the path denoted by part starting from input
      *
      */
-    std::pair<bool, std::shared_ptr<Node<T_Key>>>
-    test_and_split(std::shared_ptr<Node<T_Key>> input, const KeyInternal<T_Key> &part, char t,
+    std::pair<bool, Node<T_Key> *>
+    test_and_split(Node<T_Key> *input, const KeyInternal<T_Key> &part, char t,
                    const KeyInternal<T_Key> &remainder,
                    int value) {
         // descend the tree as far as possible
@@ -212,7 +223,7 @@ private:
                 // build a new node
                 auto new_node = make_node();
                 // build a new edge
-                auto new_edge = std::make_shared<Edge<T_Key>>(str, new_node);
+                auto new_edge = make_edge(str, new_node);
 
                 // link node -> new_node
                 new_node->add_edge(*label.begin(), edge);
@@ -236,7 +247,7 @@ private:
                     auto new_node = make_node();
                     new_node->add_ref(value);
 
-                    auto new_edge = std::make_shared<Edge<T_Key>>(remainder, new_node);
+                    auto new_edge = make_edge(remainder, new_node);
                     edge->label = edge->label.substr(remainder.size());
                     new_node->add_edge(*edge->label.begin(), edge);
                     node->add_edge(t, new_edge);
@@ -269,8 +280,8 @@ private:
      * @param rest the rest of the string
      * @param value the value to add to the index
      */
-    std::pair<std::shared_ptr<Node<T_Key>>, KeyInternal<T_Key>>
-    update(std::shared_ptr<Node<T_Key>> input_node, const KeyInternal<T_Key> &part, const char &new_char,
+    std::pair<Node<T_Key> *, KeyInternal<T_Key>>
+    update(Node<T_Key> *input_node, const KeyInternal<T_Key> &part, const char &new_char,
            const KeyInternal<T_Key> &rest, int value) {
         auto tmp_part = part;
         auto input = input_node;
@@ -283,7 +294,7 @@ private:
         auto old_root = root;
 
         while (!endpoint) {
-            std::shared_ptr<Node<T_Key>> leaf;
+            Node<T_Key> *leaf;
             auto tmp_edge = node->get_edge(new_char);
             if (tmp_edge)
                 // such a node is already present. This is one of the main differences from Ukkonen's case:
@@ -293,7 +304,7 @@ private:
                 // must build a new leaf
                 leaf = make_node();
                 leaf->add_ref(value);
-                node->add_edge(new_char, std::make_shared<Edge<T_Key>>(rest, leaf));
+                node->add_edge(new_char, make_edge(rest, leaf));
             }
 
             // update suffix link for newly created leaf
@@ -332,12 +343,17 @@ private:
     }
 
 public:
-    SuffixTree() : last{0}, active_leaf{root}, max_chars{DEFAULT_MAX_CHARS}, hash_size{1} { init(); }
+    SuffixTree() : last{0}, max_chars{DEFAULT_MAX_CHARS}, hash_size{1} { init(); }
 
-    explicit SuffixTree(std::size_t max_chars) : last{0}, active_leaf{root}, max_chars{max_chars},
+    explicit SuffixTree(std::size_t max_chars) : last{0}, max_chars{max_chars},
                                                  hash_size{1} { init(); }
 
-    std::shared_ptr<Node<T_Key> const> get_root() const { return root; }
+    ~SuffixTree() {
+        for (auto &e: all_nodes) delete e;
+        for (auto &e: all_edges) delete e;
+    }
+
+    Node<T_Key> const *get_root() const { return root; }
 
     /**
      * Searches for the given word within the GST.

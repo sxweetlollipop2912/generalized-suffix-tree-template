@@ -10,7 +10,6 @@ class KeyInternal {
 private:
     KeyConstIterator begin_;
     KeyConstIterator end_;
-    std::shared_ptr<const KeyConstIterator> global_end_;
 
 public:
     KeyInternal() = default;
@@ -20,10 +19,6 @@ public:
 
     KeyInternal(const KeyConstIterator &begin, const KeyConstIterator &end)
             : begin_(begin), end_(end) {}
-
-    KeyInternal(const KeyConstIterator &begin, const std::shared_ptr<const KeyConstIterator> &end)
-            : begin_(begin),
-              global_end_(end) {}
 
     KeyInternal(const KeyInternal &src) = default;
 
@@ -43,12 +38,7 @@ public:
 
     inline KeyConstIterator begin() const { return begin_; }
 
-    inline KeyConstIterator end() const {
-        if (global_end_)
-            return *(global_end_);
-
-        return end_;
-    }
+    inline KeyConstIterator end() const { return end_; }
 
     inline KeyConstIterator iter_at(int idx) const { return this->begin() + idx; }
 
@@ -75,12 +65,6 @@ public:
                 (start_used < key_end) ? start_used : key_end,
                 key_end);
 
-        // If the input used the global end, then so should the substring,
-        // because it has the same end.
-        if (global_end_) {
-            result.global_end_ = global_end_;
-        }
-
         return result;
     }
 
@@ -91,9 +75,6 @@ public:
         auto result = KeyInternal(
                 (start_used < key_end) ? start_used : key_end,
                 (end_used < key_end) ? end_used : key_end);
-
-        if (global_end_ && result.end() == *global_end_)
-            result.global_end_ = global_end_;
 
         return result;
     }
