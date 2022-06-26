@@ -106,9 +106,9 @@ public:
                 break;
         }
 
-        auto vec = edges.get_all();
-        for (auto &[_, e]: vec) {
-            if (e && (count < 0 || set.size() < count)) {
+        if (count < 0 || set.size() < count) {
+            auto vec = edges.get_all();
+            for (auto &[_, e]: vec) {
                 for (auto &num: e->dest()->get_data(count - (int) set.size())) {
                     set.insert(num);
                     if (set.size() == count)
