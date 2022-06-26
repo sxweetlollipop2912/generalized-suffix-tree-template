@@ -12,7 +12,7 @@ private:
 public:
     Option() : value_{}, some_{false} {}
 
-    explicit Option(T value) : value_{value}, some_{true} {}
+    explicit Option(T value) : value_{std::move(value)}, some_{true} {}
 
     [[nodiscard]] bool is_some() const { return some_; }
 
@@ -55,10 +55,10 @@ private:
     }
 
     typename container_type::iterator
-    insert(const key_type &key, const mapped_type &mapped_value) {
+    insert(const key_type &key, mapped_type mapped_value) {
         auto it = iter_at(key);
         if (it->is_none())
-            *it = Option(value_type(key, mapped_value));
+            *it = Option(value_type(key, std::move(mapped_value)));
 
         return it;
     }

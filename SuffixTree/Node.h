@@ -16,7 +16,7 @@ class Node {
 
     using T_Element = typename T_Key::value_type;
 private:
-    using Table = HashTable<T_Element, std::shared_ptr<Edge<T_Key>>>;
+    using Table = HashTable<T_Element, Edge<T_Key> *>;
     static const int DATA_START_SIZE = 0;
     static const int DEFAULT_EDGES_SIZE = 53;
 
@@ -24,8 +24,7 @@ private:
 
     Table edges;
 
-    /// Use weak_ptr instead of shared_ptr to avoid shared_ptr cyclic dependency.
-    std::weak_ptr<Node> suffix;
+    Node *suffix;
     int result_count;
 
     [[nodiscard]] bool contains(int idx) const {
@@ -106,9 +105,9 @@ public:
                 break;
         }
 
-        auto vec = edges.get_all();
-        for (auto &[_, e]: vec) {
-            if (e && (count < 0 || set.size() < count)) {
+        if (count < 0 || set.size() < count) {
+            auto vec = edges.get_all();
+            for (auto &[_, e]: vec) {
                 for (auto &num: e->dest()->get_data(count - (int) set.size())) {
                     set.insert(num);
                     if (set.size() == count)
@@ -126,7 +125,7 @@ public:
             return;
 
         add_index(idx);
-        for (auto iter = this->suffix.lock(); iter != nullptr && !iter->contains(idx); iter = iter->suffix.lock()) {
+        for (auto iter = this->suffix; iter != nullptr && !iter->contains(idx); iter = iter->suffix) {
             iter->add_ref(idx);
         }
     }
@@ -139,19 +138,27 @@ public:
         return this->result_count;
     }
 
-    void add_edge(const T_Element &c, std::shared_ptr<Edge<T_Key>> e) { edges[c] = e; }
+    void add_edge(const T_Element &c, Edge<T_Key> *e) { edges[c] = e; }
 
-    std::shared_ptr<Edge<T_Key> const> get_edge(const T_Element &c) const {
+    Edge<T_Key> const *get_edge(const T_Element &c) const {
         return edges.contains(c) ? edges.at(c) : nullptr;
     }
 
-    std::shared_ptr<Edge<T_Key>> get_edge(const T_Element &c) {
+    Edge<T_Key> *get_edge(const T_Element &c) {
         return edges.contains(c) ? edges.at(c) : nullptr;
     }
 
-    std::shared_ptr<Node const> get_suffix() const { return this->suffix.lock(); }
+    std::vector<typename Table::value_type const> get_edges() const {
+        return edges.get_all();
+    }
 
-    std::shared_ptr<Node> get_suffix() { return this->suffix.lock(); }
+    std::vector<typename Table::value_type> get_edges() {
+        return edges.get_all();
+    }
 
-    void set_suffix(std::shared_ptr<Node> const suffix) { this->suffix = suffix; }
+    Node const *get_suffix() const { return this->suffix; }
+
+    Node *get_suffix() { return this->suffix; }
+
+    void set_suffix(Node *suffix) { this->suffix = suffix; }
 };

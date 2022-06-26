@@ -12,7 +12,7 @@ using std::chrono::milliseconds;
 
 void test_speed() {
     srand(time(nullptr));
-    int sz = 7500;
+    int sz = 20000;
     int max_len = 200;
     int test = 30;
     std::cout << "Configuration: " << sz << " strings, " << max_len << " chars max. 26 lowercase letters.\n";
@@ -39,11 +39,22 @@ void test_speed() {
         std::cout << cnt << '\n';
         avg_cnt += cnt;
 
+        double avg_f = 0, avg_f_cnt = 0;
         auto t1 = high_resolution_clock::now();
 
         for (int idx = 0; idx < sz; idx++) {
             auto &s = words[idx];
+
+            auto t1 = high_resolution_clock::now();
             tree.put(s, idx);
+            auto t2 = high_resolution_clock::now();
+
+            avg_f_cnt += s.size();
+
+            //tree.search(s);
+
+            duration<double, std::milli> ms_double = t2 - t1;
+            avg_f += ms_double.count();
         }
 
         auto t2 = high_resolution_clock::now();
@@ -51,6 +62,10 @@ void test_speed() {
         duration<double, std::milli> ms_double = t2 - t1;
         std::cout << ms_double.count() << "ms\n";
         avg += ms_double.count();
+
+        avg_f /= (double) sz;
+        avg_f_cnt /= (double) sz;
+        std::cout << avg_f << "ms " << (avg_f * sz) << "ms " << avg_f_cnt << '\n';
     }
 
     avg /= (double) test;
@@ -60,7 +75,7 @@ void test_speed() {
 
 void test_correctness() {
     srand(time(nullptr));
-    int sz = 30;
+    int sz = 100;
     int max_len = 200;
     std::cout << "Configuration: " << sz << " strings, " << max_len << " chars max. 26 lowercase letters.\n";
     std::cout << "Generating strings. Tree building starts after last idx (" << sz << ") is printed.\n";
