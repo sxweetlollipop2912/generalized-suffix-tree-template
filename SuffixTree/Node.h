@@ -1,30 +1,26 @@
 #pragma once
 
 #include <vector>
-#include <map>
-#include <set>
 #include <stdexcept>
 #include <functional>
 
 #include "Edge.h"
-#include "HashTable.h"
+#include "Map.h"
+#include "Set.h"
 
 template<typename T_Key>
-class Node {
+class SuffixNode {
     template<typename T> friend
     class SuffixTree;
 
     using T_Element = typename T_Key::value_type;
 private:
-    using Table = HashTable<T_Element, Edge<T_Key> *>;
+    using Map = Map<T_Element, Edge<T_Key> *>;
     static const int DATA_START_SIZE = 0;
-    static const int DEFAULT_EDGES_SIZE = 53;
 
     std::vector<int> data;
-
-    Table edges;
-
-    Node *suffix;
+    Map edges;
+    SuffixNode *suffix;
     int result_count;
 
     [[nodiscard]] bool contains(int idx) const {
@@ -40,11 +36,11 @@ private:
         return low == high && data[low] == idx;
     }
 
-    std::set<int> compute_and_cache_count_recursive() {
-        std::set<int> set;
+    Set<int> compute_and_cache_count_recursive() {
+        Set<int> set;
         for (auto &num: data) { set.insert(num); }
 
-        auto vec = edges.get_all();
+        auto vec = edges.to_vec();
         for (auto &[_, e]: vec) {
             if (e) {
                 for (auto &num: e->dest()->compute_and_cache_count_recursive()) {
@@ -67,36 +63,22 @@ protected:
     }
 
 public:
-    Node() : suffix{}, result_count{-1} {
-        edges = Table(DEFAULT_EDGES_SIZE,
-                      [](const T_Element &e, std::size_t size, const std::function<bool(std::size_t)> &predicate) {
-                          auto idx = e % size;
-                          while (!predicate(idx)) idx = (idx + 1) % size;
-
-                          return idx;
-                      });
+    SuffixNode() : suffix{nullptr}, result_count{-1} {
         data.resize(DATA_START_SIZE);
     }
 
-    explicit Node(std::function<std::size_t(const T_Element &, std::size_t)> hash) : suffix{}, result_count{-1} {
-        edges = Table(DEFAULT_EDGES_SIZE, hash);
+    explicit SuffixNode(const std::function<typename Map::size_type(const T_Element &, const T_Element &)> &comp)
+            : suffix{nullptr}, result_count{-1} {
+        edges = Map(comp);
         data.resize(DATA_START_SIZE);
     }
 
-    Node(std::size_t edges_size, std::function<std::size_t(const T_Element &,
-                                                           std::size_t,
-                                                           const std::function<bool(std::size_t)> &)> hash)
-            : suffix{}, result_count{-1} {
-        edges = Table(edges_size, hash);
-        data.resize(DATA_START_SIZE);
-    }
-
-    [[nodiscard]] std::set<int> get_data() const {
+    [[nodiscard]] Set<int> get_data() const {
         return get_data(-1);
     }
 
-    [[nodiscard]] std::set<int> get_data(int count) const {
-        std::set<int> set;
+    [[nodiscard]] Set<int> get_data(int count) const {
+        Set<int> set;
 
         for (auto &num: data) {
             set.insert(num);
@@ -106,9 +88,10 @@ public:
         }
 
         if (count < 0 || set.size() < count) {
-            auto vec = edges.get_all();
+            auto vec = edges.to_vec();
             for (auto &[_, e]: vec) {
-                for (auto &num: e->dest()->get_data(count - (int) set.size())) {
+                auto vec2 = e->dest()->get_data(count - (int) set.size()).to_vec();
+                for (auto &num: vec2) {
                     set.insert(num);
                     if (set.size() == count)
 
@@ -148,17 +131,17 @@ public:
         return edges.contains(c) ? edges.at(c) : nullptr;
     }
 
-    std::vector<typename Table::value_type const> get_edges() const {
-        return edges.get_all();
+    std::vector<typename Map::value_type const> get_edges() const {
+        return edges.to_vec();
     }
 
-    std::vector<typename Table::value_type> get_edges() {
-        return edges.get_all();
+    std::vector<typename Map::value_type> get_edges() {
+        return edges.to_vec();
     }
 
-    Node const *get_suffix() const { return this->suffix; }
+    SuffixNode const *get_suffix() const { return this->suffix; }
 
-    Node *get_suffix() { return this->suffix; }
+    SuffixNode *get_suffix() { return this->suffix; }
 
-    void set_suffix(Node *suffix) { this->suffix = suffix; }
+    void set_suffix(SuffixNode *suffix) { this->suffix = suffix; }
 };

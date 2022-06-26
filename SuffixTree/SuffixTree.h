@@ -14,7 +14,7 @@
  * It contains a collection of results and the total number of results present in the GST.
  * @see SuffixTree#searchWithCount(std::string, int)
  */
-struct ResultSuffix {
+struct SuffixResult {
     /**
      * The total number of results present in the database
      */
@@ -22,9 +22,9 @@ struct ResultSuffix {
     /**
     * The collection of (some) results present in the GST
     */
-    std::set<int> results;
+    Set<int> results;
 
-    ResultSuffix(int total, std::set<int> set) : total{total}, results{std::move(set)} {}
+    SuffixResult(int total, Set<int> set) : total{total}, results{std::move(set)} {}
 };
 
 /**
@@ -63,15 +63,18 @@ struct ResultSuffix {
  */
 template<typename T_Key>
 class SuffixTree {
-    using T_Element = typename T_Key::value_type;
+public:
+    using size_type = std::size_t;
+
 private:
-    const std::size_t DEFAULT_MAX_CHARS = 26;
-    std::vector<Node<T_Key> *> all_nodes;
+    using T_Element = typename T_Key::value_type;
+
+    std::vector<SuffixNode<T_Key> *> all_nodes;
     std::vector<Edge<T_Key> *> all_edges;
     /**
      * The root of the suffix tree
      */
-    Node<T_Key> *root;
+    SuffixNode<T_Key> *root;
     /**
      * The index of the last item that was added to the GST
      */
@@ -79,45 +82,23 @@ private:
     /**
      * The last leaf that was added during the update operation
      */
-    Node<T_Key> *active_leaf;
+    SuffixNode<T_Key> *active_leaf;
+    /**
+     * Function to compare 2 characters
+     */
+    std::function<size_type(const T_Element &, const T_Element &)> comp;
 
-    /**
-     * Max number of characters.
-     */
-    std::size_t max_chars;
-    /**
-     * Load factor for hash table on each node.
-     */
-    const double LOAD_FACTOR = 0.8;
-    /**
-     * Size of hash table on each node.
-     */
-    std::size_t hash_size;
-    /**
-     * Hashing function used on chars.
-     */
-    std::function<std::size_t(const T_Element &, std::size_t, const std::function<bool(std::size_t)> &)> hash;
-
-    Node<T_Key> *make_node() {
-        all_nodes.push_back(new Node<T_Key>(hash_size, hash));
+    SuffixNode<T_Key> *make_node() {
+        all_nodes.push_back(new SuffixNode<T_Key>(comp));
         return all_nodes.back();
     }
 
-    Edge<T_Key> *make_edge(const KeyInternal<T_Key> &label, Node<T_Key> *dest) {
+    Edge<T_Key> *make_edge(const KeyInternal<T_Key> &label, SuffixNode<T_Key> *dest) {
         all_edges.push_back(new Edge<T_Key>(label, dest));
         return all_edges.back();
     }
 
     void init() {
-        hash_size = (double) max_chars / LOAD_FACTOR;
-        hash_size += 1 - (hash_size & 1);
-        hash = [](const T_Element &key, std::size_t size, const std::function<bool(std::size_t)> &predicate) {
-            auto idx = key % size;
-            while (!predicate(idx)) idx = (idx + 1) % size;
-
-            return idx;
-        };
-
         root = make_node();
         active_leaf = root;
     }
@@ -125,7 +106,7 @@ private:
     /**
      * Returns the tree node (if present) that corresponds to the given string.
      */
-    Node<T_Key> const *search_node(const KeyInternal<T_Key> &word) const {
+    SuffixNode<T_Key> const *search_node(const KeyInternal<T_Key> &word) const {
         /*
          * Verifies if exists a path from the root to a node such that the concatenation
          * of all the labels on the path is a super string of the given word.
@@ -163,8 +144,8 @@ private:
      * a prefix of input and remainder will be string that must be
      * appended to the concatenation of labels from s to n to get input.
      */
-    std::pair<Node<T_Key> *, KeyInternal<T_Key>>
-    canonize(Node<T_Key> *node, KeyInternal<T_Key> input) {
+    std::pair<SuffixNode<T_Key> *, KeyInternal<T_Key>>
+    canonize(SuffixNode<T_Key> *node, KeyInternal<T_Key> input) {
         if (!input.empty()) {
             auto edge = node->get_edge(*input.begin());
 
@@ -200,8 +181,8 @@ private:
      *                  the last node that can be reached by following the path denoted by part starting from input
      *
      */
-    std::pair<bool, Node<T_Key> *>
-    test_and_split(Node<T_Key> *input, const KeyInternal<T_Key> &part, char t,
+    std::pair<bool, SuffixNode<T_Key> *>
+    test_and_split(SuffixNode<T_Key> *input, const KeyInternal<T_Key> &part, const T_Element &t,
                    const KeyInternal<T_Key> &remainder,
                    int value) {
         // descend the tree as far as possible
@@ -280,8 +261,8 @@ private:
      * @param rest the rest of the string
      * @param value the value to add to the index
      */
-    std::pair<Node<T_Key> *, KeyInternal<T_Key>>
-    update(Node<T_Key> *input_node, const KeyInternal<T_Key> &part, const char &new_char,
+    std::pair<SuffixNode<T_Key> *, KeyInternal<T_Key>>
+    update(SuffixNode<T_Key> *input_node, const KeyInternal<T_Key> &part, const T_Element &new_char,
            const KeyInternal<T_Key> &rest, int value) {
         auto tmp_part = part;
         auto input = input_node;
@@ -294,7 +275,7 @@ private:
         auto old_root = root;
 
         while (!endpoint) {
-            Node<T_Key> *leaf;
+            SuffixNode<T_Key> *leaf;
             auto tmp_edge = node->get_edge(new_char);
             if (tmp_edge)
                 // such a node is already present. This is one of the main differences from Ukkonen's case:
@@ -343,17 +324,22 @@ private:
     }
 
 public:
-    SuffixTree() : last{0}, max_chars{DEFAULT_MAX_CHARS}, hash_size{1} { init(); }
+    SuffixTree() : last{0} {
+        comp = [](const T_Element &x1, const T_Element &x2) {
+            return x1 < x2;
+        };
+        init();
+    }
 
-    explicit SuffixTree(std::size_t max_chars) : last{0}, max_chars{max_chars},
-                                                 hash_size{1} { init(); }
+    explicit SuffixTree(const std::function<size_type(const T_Element &, const T_Element &)> &comp)
+            : last{0}, comp{comp} { init(); }
 
     ~SuffixTree() {
         for (auto &e: all_nodes) delete e;
         for (auto &e: all_edges) delete e;
     }
 
-    Node<T_Key> const *get_root() const { return root; }
+    SuffixNode<T_Key> const *get_root() const { return root; }
 
     /**
      * Searches for the given word within the GST.
@@ -364,7 +350,7 @@ public:
      * @param word the key to search for
      * @return the collection of indexes associated with the input <tt>word</tt>
      */
-    std::set<int> search(const T_Key &word) const {
+    Set<int> search(const T_Key &word) const {
         return search(word, -1);
     }
 
@@ -375,7 +361,7 @@ public:
      * @param count the max number of results to return
      * @return at most <tt>results</tt> values for the given word
      */
-    std::set<int> search(const T_Key &word, int count) const {
+    Set<int> search(const T_Key &word, int count) const {
         auto tmp = search_node(KeyInternal(word));
 
         if (tmp)
@@ -391,10 +377,10 @@ public:
      * @return at most <tt>results</tt> values for the given word
      * @see SuffixTree#ResultSuffix
      */
-    ResultSuffix search_with_count(const T_Key &word, int count) const {
+    SuffixResult search_with_count(const T_Key &word, int count) const {
         auto tmp = search_node(KeyInternal(word));
 
-        return tmp ? ResultSuffix(tmp->get_result_count(), tmp->get_data(count)) : ResultSuffix(0, {});
+        return tmp ? SuffixResult(tmp->get_result_count(), tmp->get_data(count)) : SuffixResult(0, {});
     }
 
     /**

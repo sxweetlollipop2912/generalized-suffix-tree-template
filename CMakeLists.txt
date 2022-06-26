@@ -3,4 +3,4 @@ project(my_suffix_tree)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(my_suffix_tree main.cpp SuffixTree/Edge.h SuffixTree/Node.h SuffixTree/SuffixTree.h SuffixTree/Utils.h SuffixTree/KeyInternal.h SuffixTree/HashTable.h)
+add_executable(my_suffix_tree main.cpp SuffixTree/Edge.h SuffixTree/Node.h SuffixTree/SuffixTree.h SuffixTree/Utils.h SuffixTree/KeyInternal.h SuffixTree/Map.h SuffixTree/AVLTree.h SuffixTree/Set.h)
