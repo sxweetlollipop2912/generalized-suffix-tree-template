@@ -13,13 +13,13 @@ public:
 
 private:
     struct AVLNode {
-        value_type data;
-        AVLNode *left;
-        AVLNode *right;
-        size_type height;
+        value_type data_;
+        AVLNode *left_;
+        AVLNode *right_;
+        size_type height_;
 
-        AVLNode(value_type data, AVLNode *left = nullptr, AVLNode *right = nullptr, size_type height = 0)
-                : data{std::move(data)}, left{left}, right{right}, height{height} {}
+        explicit AVLNode(value_type data, AVLNode *left = nullptr, AVLNode *right = nullptr, size_type height = 0)
+                : data_{std::move(data)}, left_{left}, right_{right}, height_{height} {}
     };
 
     AVLNode *root_;
@@ -29,8 +29,8 @@ private:
     void clear(AVLNode *&node) {
         if (node == nullptr) return;
 
-        clear(node->left);
-        clear(node->right);
+        clear(node->left_);
+        clear(node->right_);
         delete node;
         node = nullptr;
     }
@@ -39,94 +39,94 @@ private:
         if (node == nullptr) {
             node = new AVLNode(data);
             ++size_;
-        } else if (comp_(data, node->data)) {
-            node->left = insert(data, node->left);
+        } else if (comp_(data, node->data_)) {
+            node->left_ = insert(data, node->left_);
             if (balance_factor(node) == 2) {
-                if (comp_(data, node->left->data))
+                if (comp_(data, node->left_->data_))
                     node = single_right_rotate(node);
                 else
                     node = left_right_rotate(node);
             }
-        } else if (comp_(node->data, data)) {
-            node->right = insert(data, node->right);
+        } else if (comp_(node->data_, data)) {
+            node->right_ = insert(data, node->right_);
             if (balance_factor(node) == -2) {
-                if (comp_(node->right->data, data))
+                if (comp_(node->right_->data_, data))
                     node = single_left_rotate(node);
                 else
                     node = right_left_rotate(node);
             }
         }
 
-        node->height = std::max(height(node->left), height(node->right)) + 1;
+        node->height_ = std::max(height(node->left_), height(node->right_)) + 1;
 
         return node;
     }
 
     AVLNode *single_right_rotate(AVLNode *&node) {
-        AVLNode *u = node->left;
-        node->left = u->right;
-        u->right = node;
-        node->height = std::max(height(node->left), height(node->right)) + 1;
-        u->height = std::max(height(u->left), height(u->right)) + 1;
+        AVLNode *u = node->left_;
+        node->left_ = u->right_;
+        u->right_ = node;
+        node->height_ = std::max(height(node->left_), height(node->right_)) + 1;
+        u->height_ = std::max(height(u->left_), height(u->right_)) + 1;
 
         return u;
     }
 
     AVLNode *single_left_rotate(AVLNode *&node) {
-        AVLNode *u = node->right;
-        node->right = u->left;
-        u->left = node;
-        node->height = std::max(height(node->left), height(node->right)) + 1;
-        u->height = std::max(height(u->left), height(u->right)) + 1;
+        AVLNode *u = node->right_;
+        node->right_ = u->left_;
+        u->left_ = node;
+        node->height_ = std::max(height(node->left_), height(node->right_)) + 1;
+        u->height_ = std::max(height(u->left_), height(u->right_)) + 1;
 
         return u;
     }
 
     AVLNode *right_left_rotate(AVLNode *&node) {
-        node->right = single_right_rotate(node->right);
+        node->right_ = single_right_rotate(node->right_);
 
         return single_left_rotate(node);
     }
 
     AVLNode *left_right_rotate(AVLNode *&node) {
-        node->left = single_left_rotate(node->left);
+        node->left_ = single_left_rotate(node->left_);
 
         return single_right_rotate(node);
     }
 
     AVLNode *find_min(AVLNode *node) const {
-        if (!node || !node->left) return node;
-        else return find_min(node->left);
+        if (!node || !node->left_) return node;
+        else return find_min(node->left_);
     }
 
     AVLNode *find_max(AVLNode *node) const {
-        if (!node || !node->right) return node;
-        else return find_max(node->right);
+        if (!node || !node->right_) return node;
+        else return find_max(node->right_);
     }
 
     AVLNode *remove(const value_type &data, AVLNode *node) {
         if (!node) return nullptr;
 
         // Searching for the element
-        if (comp_(data, node->data))
-            node->left = remove(data, node->left);
-        else if (comp_(node->data, data))
-            node->right = remove(data, node->right);
+        if (comp_(data, node->data_))
+            node->left_ = remove(data, node->left_);
+        else if (comp_(node->data_, data))
+            node->right_ = remove(data, node->right_);
             // Element found
         else {
             AVLNode *temp;
 
             // Element has 2 children
-            if (node->left && node->right) {
-                temp = find_min(node->right);
-                node->data = temp->data;
-                node->right = remove(node->data, node->right);
+            if (node->left_ && node->right_) {
+                temp = find_min(node->right_);
+                node->data_ = temp->data_;
+                node->right_ = remove(node->data_, node->right_);
             }
                 // Element has 1 or 0 child
             else {
                 temp = node;
-                if (!node->left) node = node->right;
-                else if (!node->right) node = node->left;
+                if (!node->left_) node = node->right_;
+                else if (!node->right_) node = node->left_;
 
                 delete temp;
                 temp = nullptr;
@@ -134,58 +134,58 @@ private:
             }
         }
 
-        // If deleted node was a leaf
-        if (!node) return nullptr;
-
-        node->height = std::max(height(node->left), height(node->right)) + 1;
-        // If node is right-heavy
-        if (balance_factor(node) == -2) {
-            // tree is in RR case
-            if (balance_factor(node->right) == -1)
-                return single_left_rotate(node);
-                // RL case
-            else
-                return right_left_rotate(node);
-        }
-            // If node is left-heavy
-        else if (balance_factor(node) == 2) {
-            // tree is in LL case
-            if (balance_factor(node->left) == 1)
-                return single_right_rotate(node);
-                // LR case
-            else
-                return left_right_rotate(node);
+        // If deleted node was not a leaf
+        if (node) {
+            node->height_ = std::max(height(node->left_), height(node->right_)) + 1;
+            // If node is right-heavy
+            if (balance_factor(node) == -2) {
+                // tree is in RR case
+                if (balance_factor(node->right_) == -1)
+                    node = single_left_rotate(node);
+                    // RL case
+                else
+                    node = right_left_rotate(node);
+            }
+                // If node is left-heavy
+            else if (balance_factor(node) == 2) {
+                // tree is in LL case
+                if (balance_factor(node->left_) == 1)
+                    node = single_right_rotate(node);
+                    // LR case
+                else
+                    node = left_right_rotate(node);
+            }
         }
 
         return node;
     }
 
     size_type height(AVLNode *node) const {
-        return !node ? -1 : node->height;
+        return !node ? -1 : node->height_;
     }
 
     size_type balance_factor(AVLNode *node) const {
         if (!node) return 0;
 
-        return height(node->left) - height(node->right);
+        return height(node->left_) - height(node->right_);
     }
 
     void inorder(AVLNode *node, const std::function<void(const value_type &)> &func) const {
         if (node == nullptr) return;
 
-        inorder(node->left, func);
-        func(node->data);
-        inorder(node->right, func);
+        inorder(node->left_, func);
+        func(node->data_);
+        inorder(node->right_, func);
     }
 
     AVLNode *find(AVLNode *node, const value_type &value) {
         if (!node) return nullptr;
 
         AVLNode *re = nullptr;
-        if (comp_(value, node->data))
-            re = find(node->left, value);
-        else if (comp_(node->data, value))
-            re = find(node->right, value);
+        if (comp_(value, node->data_))
+            re = find(node->left_, value);
+        else if (comp_(node->data_, value))
+            re = find(node->right_, value);
         else
             re = node;
 
@@ -196,10 +196,10 @@ private:
         if (!node) return nullptr;
 
         AVLNode const *re = nullptr;
-        if (comp_(value, node->data))
-            re = find(node->left, value);
-        else if (comp_(node->data, value))
-            re = find(node->right, value);
+        if (comp_(value, node->data_))
+            re = find(node->left_, value);
+        else if (comp_(node->data_, value))
+            re = find(node->right_, value);
         else
             re = node;
 

@@ -37,13 +37,13 @@ public:
     /// Allows modifications, i.e. `table.at(0) = sth;`\n
     /// Exception(s): key not found
     mapped_type &at(const key_type &key) {
-        return map_.find(map_.root_, value_type(key, {}))->data.second;
+        return map_.find(map_.root_, value_type(key, {}))->data_.second;
     }
 
     /// Does not allow modifications.\n
     /// Exception(s): key not found
     mapped_type const &at(const key_type &key) const {
-        return map_.find(map_.root_, value_type(key, {}))->data.second;
+        return map_.find(map_.root_, value_type(key, {}))->data_.second;
     }
 
     /// Allows modifications, i.e. `table[0] = sth;`\n

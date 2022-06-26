@@ -90,13 +90,13 @@ public:
         return iters.second == prefix_end;
     }
 
-    [[nodiscard]] std::string debug(std::size_t pos = 0) const {
+    [[nodiscard]] T_Key debug(std::size_t pos = 0) const {
         const auto key_start = std::next(this->begin(), pos);
         const auto key_end = this->end();
         if (key_end <= key_start) {
             return {};
         }
 
-        return std::string(key_start, key_end);
+        return T_Key(key_start, key_end);
     }
 };

@@ -15,13 +15,15 @@ private:
 
 public:
     Set() {
-        set_ = AVLTree<value_type>([](const value_type &x1, const value_type &x2) {
-            return x1 < x2;
-        });
+        set_ = AVLTree<value_type>();
     }
 
     explicit Set(const std::function<size_type(const value_type &, const value_type &)> &comp) {
         set_ = AVLTree<value_type>(comp);
+    }
+
+    Set(const std::initializer_list<value_type>& source) {
+        for (const auto& e : source) insert(e);
     }
 
     std::vector<value_type> to_vec() const { return set_.to_vec(); }

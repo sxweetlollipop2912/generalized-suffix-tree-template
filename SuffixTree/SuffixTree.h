@@ -187,6 +187,7 @@ private:
                    int value) {
         // descend the tree as far as possible
         auto[node, str] = canonize(input, part);
+        std::pair<bool, SuffixNode<T_Key> *> re;
 
         if (!str.empty()) {
             auto edge = node->get_edge(*str.begin());
@@ -195,7 +196,7 @@ private:
             // must see whether "str" is substring of the label of an edge
             if (label.size() > str.size() && *(label.iter_at(str.size())) == t)
 
-                return std::make_pair(true, node);
+                re = std::make_pair(true, node);
             else {
                 // need to split the edge
                 assert(label.has_prefix(str));
@@ -210,7 +211,7 @@ private:
                 new_node->add_edge(*label.begin(), edge);
                 node->add_edge(*str.begin(), new_edge);
 
-                return std::make_pair(false, new_node);
+                re = std::make_pair(false, new_node);
             }
         } else {
             auto edge = node->get_edge(t);
@@ -219,10 +220,10 @@ private:
                     // update payload of destination node
                     edge->dest()->add_ref(value);
 
-                    return std::make_pair(true, node);
+                    re = std::make_pair(true, node);
                 } else if (remainder.has_prefix(edge->label)) {
 
-                    return std::make_pair(true, node);
+                    re = std::make_pair(true, node);
                 } else if (edge->label.has_prefix(remainder)) {
                     // need to split as above
                     auto new_node = make_node();
@@ -233,16 +234,18 @@ private:
                     new_node->add_edge(*edge->label.begin(), edge);
                     node->add_edge(t, new_edge);
 
-                    return std::make_pair(false, node);
+                    re = std::make_pair(false, node);
                 } else {
                     // they are different words. No prefix. but they may still share some common substr
-                    return std::make_pair(true, node);
+                    re = std::make_pair(true, node);
                 }
             } else {
                 // if there is no t-transition from node
-                return std::make_pair(false, node);
+                re = std::make_pair(false, node);
             }
         }
+
+        return re;
     }
 
     /**
