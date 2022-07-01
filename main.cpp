@@ -4,7 +4,6 @@
 #include <chrono>
 
 #include "SuffixTree/SuffixTree.h"
-#include "SuffixTree/AVLTree.h"
 
 using std::chrono::high_resolution_clock;
 using std::chrono::duration_cast;
@@ -16,13 +15,14 @@ void test_speed() {
     int sz = 80000;
     int max_len = 100;
     int test = 30;
-    std::cout << "Configuration: " << sz << " strings, " << max_len << " chars max. 26 lowercase letters.\n";
+    std::cout << "Remember to set to release.\nConfiguration: " << sz << " strings, " << max_len
+              << " chars max. 26 lowercase letters.\n";
 
     double avg = 0, avg_cnt = 0;
     for (int t = 1; t <= test; t++) {
         std::cout << "TIME " << t << '\n';
 
-        SuffixTree<std::string> tree;
+        SuffixTree <std::string> tree;
 
         std::vector<std::string> words;
         int cnt = 0;
@@ -77,15 +77,15 @@ void test_speed() {
 void test_correctness() {
     srand(time(nullptr));
     int sz = 100;
-    int max_len = 200;
+    int max_len = 100;
     int test = 100;
-    std::cout << "Configuration: " << sz << " strings, " << max_len << " chars max. 26 lowercase letters.\n";
-    std::cout << "Generating strings. Tree building starts after last idx (" << sz << ") is printed.\n";
+    std::cout << "Remember to set to debug.\nConfiguration: " << sz << " strings, " << max_len
+              << " chars max. 26 lowercase letters.\n";
 
     for (int t = 1; t <= test; t++) {
         std::cout << "TEST " << t << '\n';
 
-        SuffixTree<std::string> tree;
+        SuffixTree <std::string> tree;
 
         std::vector<std::string> words;
         int cnt = 0;
@@ -109,7 +109,7 @@ void test_correctness() {
             for (int i = 0; i < s.size(); i++)
                 for (int j = 1; j <= s.size() - i; j++) {
                     auto set = tree.search(s.substr(i, j));
-                    assert(set.contains(idx));
+                    assert(set.find(idx) != set.end());
                 }
         }
 
@@ -118,7 +118,7 @@ void test_correctness() {
             for (int i = 0; i < s.size(); i++)
                 for (int j = 1; j <= s.size() - i; j++) {
                     auto set = tree.search(s.substr(i, j));
-                    assert(set.contains(idx));
+                    assert(set.find(idx) != set.end());
                 }
         }
 
@@ -129,8 +129,8 @@ void test_correctness() {
             for (int i = 0; i < s.size(); i++)
                 for (int j = 1; j <= s.size() - i; j++) {
                     auto set = tree.search(s.substr(i, j));
-                    assert(set.contains(idx));
-                    assert(set.contains(idx + sz));
+                    assert(set.find(idx) != set.end());
+                    assert(set.find(idx + sz) != set.end());
                 }
         }
     }
@@ -140,10 +140,10 @@ void test_correctness_vec() {
     srand(time(nullptr));
     int sz = 100;
     int max_len = 200;
-    std::cout << "Configuration: " << sz << " strings, " << max_len << " chars max. 26 lowercase letters.\n";
-    std::cout << "Generating strings. Tree building starts after last idx (" << sz << ") is printed.\n";
+    std::cout << "Remember to set to debug.\nConfiguration: " << sz << " strings, " << max_len
+              << " chars max. 26 lowercase letters.\n";
 
-    SuffixTree<std::vector<int>> tree;
+    SuffixTree <std::vector<int>> tree;
 
     std::vector<std::vector<int>> words;
     int cnt = 0;
@@ -156,8 +156,6 @@ void test_correctness_vec() {
         }
 
         cnt += len;
-
-        std::cout << i + 1 << '\n';
     }
 
     std::cout << cnt << '\n';
@@ -169,7 +167,7 @@ void test_correctness_vec() {
         for (int i = 0; i < s.size(); i++)
             for (int j = i + 1; j <= s.size(); j++) {
                 auto set = tree.search(std::vector<int>(s.begin() + i, s.begin() + j));
-                assert(set.contains(idx));
+                assert(set.find(idx) != set.end());
             }
     }
 
@@ -178,7 +176,7 @@ void test_correctness_vec() {
         for (int i = 0; i < s.size(); i++)
             for (int j = i + 1; j <= s.size(); j++) {
                 auto set = tree.search(std::vector<int>(s.begin() + i, s.begin() + j));
-                assert(set.contains(idx));
+                assert(set.find(idx) != set.end());
             }
     }
 
@@ -189,35 +187,9 @@ void test_correctness_vec() {
         for (int i = 0; i < s.size(); i++)
             for (int j = i + 1; j <= s.size(); j++) {
                 auto set = tree.search(std::vector<int>(s.begin() + i, s.begin() + j));
-                assert(set.contains(idx));
-                assert(set.contains(idx));
+                assert(set.find(idx) != set.end());
+                assert(set.find(idx) != set.end());
             }
-    }
-}
-
-
-void test_avl() {
-    srand(time(nullptr));
-    int sz = 100;
-
-    std::vector<int> v;
-    for (int i = 0; i < sz; i++) {
-        int c = rand() % 200;
-        v.push_back(c);
-        std::cout << c << ' ';
-    }
-    std::cout << '\n';
-
-    AVLTree<int> t;
-    for (auto &e: v) {
-        t.insert(e);
-        assert(t.contains(e) == true);
-    }
-    for (auto &e: v) {
-        t.insert(e);
-        assert(t.contains(e) == true);
-        t.erase(e);
-        assert(t.contains(e) == false);
     }
 }
 
@@ -225,5 +197,30 @@ int main() {
     test_speed();
     //test_correctness();
     //test_correctness_vec();
-    //test_avl();
+
+//    SuffixTree<std::string> tree;
+//    std::string words[] = { "qwe", "rtyr", "uio", "pas", "dfg", "hjk", "lzx", "cvb", "bnm" };
+//    int sz = 8;
+//
+//    for (int idx = 0; idx < sz; idx++) {
+//        auto &s = words[idx];
+//        tree.put(s, idx);
+//
+//        for (int i = 0; i < s.size(); i++)
+//            for (int j = 1; j <= s.size() - i; j++) {
+//                auto set = tree.search(s.substr(i, j));
+//                assert(set.find(idx) != set.end());
+//            }
+//
+//        for(int i = 0; i < sz; i++) {
+//            if (i == idx) continue;
+//            auto &s1 = words[i];
+//
+//            for (int i = 0; i < s1.size(); i++)
+//                for (int j = 1; j <= s1.size() - i; j++) {
+//                    auto set = tree.search(s1.substr(i, j));
+//                    assert(set.find(idx) == set.end());
+//                }
+//        }
+//    }
 }

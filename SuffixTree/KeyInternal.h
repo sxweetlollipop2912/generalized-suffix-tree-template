@@ -8,17 +8,20 @@ class KeyInternal {
     using KeyConstIterator = typename T_Key::const_iterator;
     using T_Element = typename T_Key::value_type;
 private:
+    KeyConstIterator true_begin_;
     KeyConstIterator begin_;
     KeyConstIterator end_;
 
 public:
+    using size_type = typename T_Key::size_type;
+
     KeyInternal() = default;
 
     KeyInternal(const T_Key &key)
-            : begin_(std::cbegin(key)), end_(std::cend(key)) {}
+            : true_begin_(std::cbegin(key)), begin_(std::cbegin(key)), end_(std::cend(key)) {}
 
-    KeyInternal(const KeyConstIterator &begin, const KeyConstIterator &end)
-            : begin_(begin), end_(end) {}
+    KeyInternal(const KeyConstIterator &true_begin, const KeyConstIterator &begin, const KeyConstIterator &end)
+            : true_begin_(true_begin), begin_(begin), end_(end) {}
 
     KeyInternal(const KeyInternal &src) = default;
 
@@ -40,11 +43,13 @@ public:
 
     inline KeyConstIterator end() const { return end_; }
 
+    inline KeyConstIterator true_begin() const { return true_begin_; }
+
     inline KeyConstIterator iter_at(int idx) const { return this->begin() + idx; }
 
     inline T_Element at(int idx) const { return *(this->begin() + idx); }
 
-    [[nodiscard]] inline std::size_t size(std::size_t from_idx = 0) const {
+    [[nodiscard]] inline size_type size(size_type from_idx = 0) const {
         const auto begin = std::next(this->begin(), from_idx);
         const auto end = this->end();
         if (end <= begin) {
@@ -58,28 +63,28 @@ public:
         return this->begin() >= this->end();
     }
 
-    inline KeyInternal substr(std::size_t from_idx) const {
+    inline KeyInternal substr(size_type from_idx) const {
         const auto start_used = std::next(this->begin(), from_idx);
         const auto key_end = this->end();
-        auto result = KeyInternal(
-                (start_used < key_end) ? start_used : key_end,
-                key_end);
+        auto result = KeyInternal(true_begin_,
+                                  (start_used < key_end) ? start_used : key_end,
+                                  key_end);
 
         return result;
     }
 
-    inline KeyInternal substr(std::size_t from_idx, std::size_t len) const {
+    inline KeyInternal substr(size_type from_idx, size_type len) const {
         const auto start_used = std::next(this->begin(), from_idx);
         const auto end_used = std::next(start_used, len);
         const auto key_end = this->end();
-        auto result = KeyInternal(
-                (start_used < key_end) ? start_used : key_end,
-                (end_used < key_end) ? end_used : key_end);
+        auto result = KeyInternal(true_begin_,
+                                  (start_used < key_end) ? start_used : key_end,
+                                  (end_used < key_end) ? end_used : key_end);
 
         return result;
     }
 
-    bool has_prefix(const KeyInternal &prefix, std::size_t str_begin_idx = 0, std::size_t prefix_begin_idx = 0) const {
+    bool has_prefix(const KeyInternal &prefix, size_type str_begin_idx = 0, size_type prefix_begin_idx = 0) const {
         if (this->size() < prefix.size()) return false;
 
         const auto prefix_begin = std::next(prefix.begin(), prefix_begin_idx);
@@ -90,7 +95,7 @@ public:
         return iters.second == prefix_end;
     }
 
-    [[nodiscard]] T_Key debug(std::size_t pos = 0) const {
+    [[nodiscard]] T_Key debug(size_type pos = 0) const {
         const auto key_start = std::next(this->begin(), pos);
         const auto key_end = this->end();
         if (key_end <= key_start) {

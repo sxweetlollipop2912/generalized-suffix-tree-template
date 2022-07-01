@@ -3,24 +3,23 @@
 #include <vector>
 #include <stdexcept>
 #include <functional>
+#include <unordered_map>
+#include <set>
 
 #include "Edge.h"
-#include "Map.h"
-#include "Set.h"
 
 template<typename T_Key>
-class SuffixNode {
+class Node {
     template<typename T> friend
     class SuffixTree;
 
     using T_Element = typename T_Key::value_type;
 private:
-    using Map = Map<T_Element, Edge<T_Key> *>;
     static const int DATA_START_SIZE = 0;
 
     std::vector<int> data_;
-    Map edges_;
-    SuffixNode *suffix_;
+    std::unordered_map<T_Element, Edge<T_Key> *> edges_;
+    Node *suffix_;
     int result_count_;
 
     [[nodiscard]] bool contains(int idx) const {
@@ -36,16 +35,14 @@ private:
         return low == high && data_[low] == idx;
     }
 
-    Set<int> compute_and_cache_count_recursive() {
-        Set<int> set;
+    std::set<int> compute_and_cache_count_recursive() {
+        std::set<int> set;
         for (auto &num: data_) { set.insert(num); }
 
-        auto vec = edges_.to_vec();
-        for (auto &[_, e]: vec) {
+        for (auto &[_, e]: edges_) {
             if (e) {
-                for (auto &num: e->dest()->compute_and_cache_count_recursive()) {
-                    set.insert(num);
-                }
+                auto set_e = e->dest()->compute_and_cache_count_recursive();
+                set.insert(set_e);
             }
         }
         result_count_ = (int) set.size();
@@ -63,22 +60,17 @@ protected:
     }
 
 public:
-    SuffixNode() : suffix_{nullptr}, result_count_{-1} {
+    Node() : suffix_{nullptr}, result_count_{-1} {
+        edges_.clear();
         data_.resize(DATA_START_SIZE);
     }
 
-    explicit SuffixNode(const std::function<typename Map::size_type(const T_Element &, const T_Element &)> &comp)
-            : suffix_{nullptr}, result_count_{-1} {
-        edges_ = Map(comp);
-        data_.resize(DATA_START_SIZE);
-    }
-
-    [[nodiscard]] Set<int> get_data() const {
+    [[nodiscard]] std::set<int> get_data() const {
         return get_data(-1);
     }
 
-    [[nodiscard]] Set<int> get_data(int count) const {
-        Set<int> set;
+    [[nodiscard]] std::set<int> get_data(int count) const {
+        std::set<int> set;
 
         for (auto &num: data_) {
             set.insert(num);
@@ -88,10 +80,9 @@ public:
         }
 
         if (count < 0 || set.size() < count) {
-            auto vec = edges_.to_vec();
-            for (auto &[_, e]: vec) {
-                auto vec2 = e->dest()->get_data(count - (int) set.size()).to_vec();
-                for (auto &num: vec2) {
+            for (auto &[_, e]: edges_) {
+                auto set_e = e->dest()->get_data(count - (int) set.size());
+                for (auto &num: set_e) {
                     set.insert(num);
                     if (set.size() == count)
 
@@ -128,20 +119,12 @@ public:
     }
 
     Edge<T_Key> *get_edge(const T_Element &c) {
-        return edges_.contains(c) ? edges_.at(c) : nullptr;
+        return edges_.find(c) != edges_.end() ? edges_.at(c) : nullptr;
     }
 
-    std::vector<typename Map::value_type const> get_edges() const {
-        return edges_.to_vec();
-    }
+    Node const *get_suffix() const { return this->suffix_; }
 
-    std::vector<typename Map::value_type> get_edges() {
-        return edges_.to_vec();
-    }
+    Node *get_suffix() { return this->suffix_; }
 
-    SuffixNode const *get_suffix() const { return this->suffix_; }
-
-    SuffixNode *get_suffix() { return this->suffix_; }
-
-    void set_suffix(SuffixNode *suffix) { this->suffix_ = suffix; }
+    void set_suffix(Node *suffix) { this->suffix_ = suffix; }
 };

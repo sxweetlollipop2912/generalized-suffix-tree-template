@@ -9,12 +9,4 @@ namespace Utils {
             return s;
         return s.substr(0, s.size() - 1);
     }
-
-//    std::string normalize(const std::string in) {
-//        std::string out = in;
-//        for(auto &c : out)
-//            if (c >= 'A' && c <= 'Z') c -= ('A' - 'a');
-//
-//        return out;
-//    }
 }
