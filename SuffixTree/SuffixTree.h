@@ -72,7 +72,6 @@ private:
 
     std::vector<Node<T_Key> *> all_nodes;
     std::vector<Edge<T_Key> *> all_edges;
-    typename T_Key::size_type max_key_len;
     /**
      * The root of the suffix tree
      */
@@ -301,7 +300,7 @@ private:
                 auto[node_, str] = canonize(input->get_suffix(),
                                             Utils::safe_cut_last_char(tmp_part));
                 input = node_;
-                tmp_part = KeyInternal<T_Key>(str.true_begin(), str.begin(), ++str.end());
+                tmp_part = KeyInternal<T_Key>(str.begin(), ++str.end());
             }
 
             auto[endpoint_, node_] = test_and_split(input,
@@ -320,7 +319,7 @@ private:
     }
 
 public:
-    SuffixTree() : last{0}, max_key_len{0} {
+    SuffixTree() : last{0} {
         root = make_node();
         active_leaf = root;
     }
@@ -329,8 +328,6 @@ public:
         for (auto &e: all_nodes) delete e;
         for (auto &e: all_edges) delete e;
     }
-
-    Node<T_Key> const *get_root() const { return root; }
 
     /**
      * Searches for the given word within the GST.
@@ -391,7 +388,6 @@ public:
         }
         last = idx;
         KeyInternal<T_Key> key_it(key);
-        max_key_len = std::max(max_key_len, key_it.size());
 
         // reset active_leaf
         active_leaf = root;
@@ -399,10 +395,10 @@ public:
         // proceed with tree construction (closely related to procedure in
         // Ukkonen's paper)
         auto node = root;
-        KeyInternal<T_Key> text(key_it.begin(), key_it.begin(), key_it.begin());
+        KeyInternal<T_Key> text(key_it.begin(), key_it.begin());
         // iterate over the string, one char at a time
         for (int i = 0; i < key_it.size(); i++) {
-            text = KeyInternal<T_Key>(text.true_begin(), text.begin(), ++text.end());
+            text = KeyInternal<T_Key>(text.begin(), ++text.end());
 
             // update the tree with the new transitions due to this new char
             auto active = update(node, KeyInternal(text), key_it.at(i), key_it.substr(i), idx);

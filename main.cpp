@@ -78,7 +78,7 @@ void test_correctness() {
     srand(time(nullptr));
     int sz = 100;
     int max_len = 100;
-    int test = 100;
+    int test = 20;
     std::cout << "Remember to set to debug.\nConfiguration: " << sz << " strings, " << max_len
               << " chars max. 26 lowercase letters.\n";
 
@@ -194,33 +194,33 @@ void test_correctness_vec() {
 }
 
 int main() {
-    test_speed();
-    //test_correctness();
-    //test_correctness_vec();
+    //test_speed();
+    test_correctness();
+    test_correctness_vec();
 
-//    SuffixTree<std::string> tree;
-//    std::string words[] = { "qwe", "rtyr", "uio", "pas", "dfg", "hjk", "lzx", "cvb", "bnm" };
-//    int sz = 8;
-//
-//    for (int idx = 0; idx < sz; idx++) {
-//        auto &s = words[idx];
-//        tree.put(s, idx);
-//
-//        for (int i = 0; i < s.size(); i++)
-//            for (int j = 1; j <= s.size() - i; j++) {
-//                auto set = tree.search(s.substr(i, j));
-//                assert(set.find(idx) != set.end());
-//            }
-//
-//        for(int i = 0; i < sz; i++) {
-//            if (i == idx) continue;
-//            auto &s1 = words[i];
-//
-//            for (int i = 0; i < s1.size(); i++)
-//                for (int j = 1; j <= s1.size() - i; j++) {
-//                    auto set = tree.search(s1.substr(i, j));
-//                    assert(set.find(idx) == set.end());
-//                }
-//        }
-//    }
+    SuffixTree<std::string> tree;
+    std::string words[] = { "qwe", "rtyr", "uio", "pas", "dfg", "hjk", "lzx", "cvb", "bnm" };
+    int sz = 8;
+
+    for (int idx = 0; idx < sz; idx++) {
+        auto &s = words[idx];
+        tree.put(s, idx);
+
+        for (int i = 0; i < s.size(); i++)
+            for (int j = 1; j <= s.size() - i; j++) {
+                auto set = tree.search(s.substr(i, j));
+                assert(set.find(idx) != set.end());
+            }
+
+        for(int i = 0; i < sz; i++) {
+            if (i == idx) continue;
+            auto &s1 = words[i];
+
+            for (int i = 0; i < s1.size(); i++)
+                for (int j = 1; j <= s1.size() - i; j++) {
+                    auto set = tree.search(s1.substr(i, j));
+                    assert(set.find(idx) == set.end());
+                }
+        }
+    }
 }

@@ -8,7 +8,6 @@ class KeyInternal {
     using KeyConstIterator = typename T_Key::const_iterator;
     using T_Element = typename T_Key::value_type;
 private:
-    KeyConstIterator true_begin_;
     KeyConstIterator begin_;
     KeyConstIterator end_;
 
@@ -18,10 +17,10 @@ public:
     KeyInternal() = default;
 
     KeyInternal(const T_Key &key)
-            : true_begin_(std::cbegin(key)), begin_(std::cbegin(key)), end_(std::cend(key)) {}
+            : begin_(std::cbegin(key)), end_(std::cend(key)) {}
 
-    KeyInternal(const KeyConstIterator &true_begin, const KeyConstIterator &begin, const KeyConstIterator &end)
-            : true_begin_(true_begin), begin_(begin), end_(end) {}
+    KeyInternal(const KeyConstIterator &begin, const KeyConstIterator &end)
+            : begin_(begin), end_(end) {}
 
     KeyInternal(const KeyInternal &src) = default;
 
@@ -42,8 +41,6 @@ public:
     inline KeyConstIterator begin() const { return begin_; }
 
     inline KeyConstIterator end() const { return end_; }
-
-    inline KeyConstIterator true_begin() const { return true_begin_; }
 
     inline KeyConstIterator iter_at(int idx) const { return this->begin() + idx; }
 
@@ -66,8 +63,7 @@ public:
     inline KeyInternal substr(size_type from_idx) const {
         const auto start_used = std::next(this->begin(), from_idx);
         const auto key_end = this->end();
-        auto result = KeyInternal(true_begin_,
-                                  (start_used < key_end) ? start_used : key_end,
+        auto result = KeyInternal((start_used < key_end) ? start_used : key_end,
                                   key_end);
 
         return result;
@@ -77,8 +73,7 @@ public:
         const auto start_used = std::next(this->begin(), from_idx);
         const auto end_used = std::next(start_used, len);
         const auto key_end = this->end();
-        auto result = KeyInternal(true_begin_,
-                                  (start_used < key_end) ? start_used : key_end,
+        auto result = KeyInternal((start_used < key_end) ? start_used : key_end,
                                   (end_used < key_end) ? end_used : key_end);
 
         return result;
