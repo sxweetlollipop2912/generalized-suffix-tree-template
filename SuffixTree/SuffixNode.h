@@ -32,7 +32,8 @@ private:
         }
 
         if (set.size() != count) {
-            for (auto &[_, e]: edges_) {
+            for (std::pair<element_type, edge_type *> p: edges_) {
+                edge_type const *e = p.second;
                 e->dest()->get_data(set, count);
                 if (set.size() == count)
 

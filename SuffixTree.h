@@ -33,7 +33,7 @@ public:
     KeyInternal() = default;
 
     KeyInternal(const T_Key &key)
-            : begin_(std::cbegin(key)), end_(std::cend(key)) {}
+            : begin_(std::begin(key)), end_(std::end(key)) {}
 
     KeyInternal(const const_iterator &begin, const const_iterator &end)
             : begin_(begin), end_(end) {}
@@ -98,11 +98,18 @@ public:
 
         const auto prefix_begin = std::next(prefix.begin(), prefix_begin_idx);
         const auto prefix_end = prefix.end();
-        const auto iters = std::mismatch(std::next(this->begin(), str_begin_idx), this->end(),
-                                         prefix_begin, prefix_end,
-                                         [](const auto &e1, const auto &e2) { return !(e1 < e2) && !(e2 < e1); });
 
-        return iters.second == prefix_end;
+        auto pit = prefix_begin;
+        {
+            for (auto it = std::next(this->begin(), str_begin_idx);
+                 it != this->end() && pit != prefix_end; it++, pit++) {
+                auto e = *it;
+                auto pe = *pit;
+                if (e < pe || pe < e) break;
+            }
+        }
+
+        return pit == prefix_end;
     }
 
     [[nodiscard]] T_Key debug(size_type pos = 0) const {
@@ -175,7 +182,8 @@ private:
         }
 
         if (set.size() != count) {
-            for (auto &[_, e]: edges_) {
+            for (std::pair<element_type, edge_type *> p: edges_) {
+                edge_type const *e = p.second;
                 e->dest()->get_data(set, count);
                 if (set.size() == count)
 
@@ -386,7 +394,14 @@ private:
                    const key_type &remainder,
                    mapped_type value) {
         // descend the tree as far as possible
-        auto[node, str] = canonize(input_node, part);
+        node_type *node;
+        key_type str;
+        {
+            auto p = canonize(input_node, part);
+            node = p.first;
+            str = p.second;
+        }
+
         std::pair<bool, node_type *> re;
 
         if (!str.empty()) {
@@ -474,11 +489,18 @@ private:
         auto tmp_part = part;
         auto input = input_node;
 
-        auto[endpoint, node] = test_and_split(input,
-                                              part.substr(0, part.size() - 1),
-                                              new_char,
-                                              rest,
-                                              value);
+        bool endpoint;
+        node_type *node;
+        {
+            auto p = test_and_split(input,
+                                    part.substr(0, part.size() - 1),
+                                    new_char,
+                                    rest,
+                                    value);
+            endpoint = p.first;
+            node = p.second;
+        }
+
         auto old_root = root;
 
         while (!endpoint) {
@@ -509,19 +531,25 @@ private:
                 // this is a special case to handle what is referred to as node _|_ on the paper
                 tmp_part = tmp_part.substr(1);
             } else {
-                auto[node_, str] = canonize(input->get_suffix(),
-                                            safe_cut_last_char(tmp_part));
-                input = node_;
+                key_type str;
+                {
+                    auto p = canonize(input->get_suffix(),
+                                      safe_cut_last_char(tmp_part));
+                    input = p.first;
+                    str = p.second;
+                }
                 tmp_part = {str.begin(), ++str.end()};
             }
 
-            auto[endpoint_, node_] = test_and_split(input,
-                                                    safe_cut_last_char(tmp_part),
-                                                    new_char,
-                                                    rest,
-                                                    value);
-            endpoint = endpoint_;
-            node = node_;
+            {
+                auto p = test_and_split(input,
+                                        safe_cut_last_char(tmp_part),
+                                        new_char,
+                                        rest,
+                                        value);
+                endpoint = p.first;
+                node = p.second;
+            }
         }
 
         if (old_root != root)
@@ -593,7 +621,7 @@ public:
             text = {text.begin(), ++text.end()};
 
             // update the tree with the new transitions due to this new char
-            auto active = update(node, KeyInternal(text), key.at(i), key.substr(i), index);
+            auto active = update(node, text, key.at(i), key.substr(i), index);
 
             // make sure the active pair is canonical
             active = canonize(active.first, active.second);

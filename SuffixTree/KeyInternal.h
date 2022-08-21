@@ -18,7 +18,7 @@ public:
     KeyInternal() = default;
 
     KeyInternal(const T_Key &key)
-            : begin_(std::cbegin(key)), end_(std::cend(key)) {}
+            : begin_(std::begin(key)), end_(std::end(key)) {}
 
     KeyInternal(const const_iterator &begin, const const_iterator &end)
             : begin_(begin), end_(end) {}
@@ -83,11 +83,18 @@ public:
 
         const auto prefix_begin = std::next(prefix.begin(), prefix_begin_idx);
         const auto prefix_end = prefix.end();
-        const auto iters = std::mismatch(std::next(this->begin(), str_begin_idx), this->end(),
-                                         prefix_begin, prefix_end,
-                                         [](const auto &e1, const auto &e2) { return !(e1 < e2) && !(e2 < e1); });
 
-        return iters.second == prefix_end;
+        auto pit = prefix_begin;
+        {
+            for (auto it = std::next(this->begin(), str_begin_idx);
+                 it != this->end() && pit != prefix_end; it++, pit++) {
+                auto e = *it;
+                auto pe = *pit;
+                if (e < pe || pe < e) break;
+            }
+        }
+
+        return pit == prefix_end;
     }
 
     [[nodiscard]] T_Key debug(size_type pos = 0) const {
