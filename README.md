@@ -7,7 +7,7 @@ one string).
 
 You can find details of this version of Ukkonen's algorithm at the original repo.
 
-### More features were added along the way:
+### More features were added
 
 - Allow any type of list (with some requirements), not limited to string. Those requirements are:
     1. Typename `value_type` (type of elements), `size_type` and `const_iterator` is defined and public.
