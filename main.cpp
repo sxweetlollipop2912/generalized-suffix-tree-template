@@ -22,7 +22,7 @@ void test_speed() {
     for (int t = 1; t <= test; t++) {
         std::cout << "TIME " << t << '\n';
 
-        SuffixTree <std::string> tree;
+        SuffixTree<std::string, int> tree;
 
         std::vector<std::string> words;
         int cnt = 0;
@@ -85,7 +85,7 @@ void test_correctness() {
     for (int t = 1; t <= test; t++) {
         std::cout << "TEST " << t << '\n';
 
-        SuffixTree <std::string> tree;
+        SuffixTree<std::string, int> tree;
 
         std::vector<std::string> words;
         int cnt = 0;
@@ -139,57 +139,63 @@ void test_correctness() {
 void test_correctness_vec() {
     srand(time(nullptr));
     int sz = 100;
-    int max_len = 200;
+    int max_len = 100;
     std::cout << "Remember to set to debug.\nConfiguration: " << sz << " strings, " << max_len
               << " chars max. 26 lowercase letters.\n";
 
-    SuffixTree <std::vector<int>> tree;
+    int test = 20;
 
-    std::vector<std::vector<int>> words;
-    int cnt = 0;
-    for (int i = 0; i < sz; i++) {
-        int len = rand() % max_len + 1;
-        words.emplace_back();
-        for (int j = 0; j < len; j++) {
-            int c = rand() % 200;
-            words.back().push_back(c);
+    for (int t = 1; t <= test; t++) {
+        std::cout << "TEST " << t << '\n';
+
+        SuffixTree<std::vector<int>, int> tree;
+
+        std::vector<std::vector<int>> words;
+        int cnt = 0;
+        for (int i = 0; i < sz; i++) {
+            int len = rand() % max_len + 1;
+            words.emplace_back();
+            for (int j = 0; j < len; j++) {
+                int c = rand() % 200;
+                words.back().push_back(c);
+            }
+
+            cnt += len;
         }
 
-        cnt += len;
-    }
+        std::cout << cnt << '\n';
 
-    std::cout << cnt << '\n';
+        for (int idx = 0; idx < sz; idx++) {
+            auto &s = words[idx];
+            tree.put(s, idx);
 
-    for (int idx = 0; idx < sz; idx++) {
-        auto &s = words[idx];
-        tree.put(s, idx);
+            for (int i = 0; i < s.size(); i++)
+                for (int j = i + 1; j <= s.size(); j++) {
+                    auto set = tree.search({s.begin() + i, s.begin() + j});
+                    assert(set.find(idx) != set.end());
+                }
+        }
 
-        for (int i = 0; i < s.size(); i++)
-            for (int j = i + 1; j <= s.size(); j++) {
-                auto set = tree.search(std::vector<int>(s.begin() + i, s.begin() + j));
-                assert(set.find(idx) != set.end());
-            }
-    }
+        for (int idx = 0; idx < sz; idx++) {
+            auto &s = words[idx];
+            for (int i = 0; i < s.size(); i++)
+                for (int j = i + 1; j <= s.size(); j++) {
+                    auto set = tree.search({s.begin() + i, s.begin() + j});
+                    assert(set.find(idx) != set.end());
+                }
+        }
 
-    for (int idx = 0; idx < sz; idx++) {
-        auto &s = words[idx];
-        for (int i = 0; i < s.size(); i++)
-            for (int j = i + 1; j <= s.size(); j++) {
-                auto set = tree.search(std::vector<int>(s.begin() + i, s.begin() + j));
-                assert(set.find(idx) != set.end());
-            }
-    }
+        for (int idx = 0; idx < sz; idx++) {
+            auto &s = words[idx];
+            tree.put(s, idx + sz);
 
-    for (int idx = 0; idx < sz; idx++) {
-        auto &s = words[idx];
-        tree.put(s, idx + sz);
-
-        for (int i = 0; i < s.size(); i++)
-            for (int j = i + 1; j <= s.size(); j++) {
-                auto set = tree.search(std::vector<int>(s.begin() + i, s.begin() + j));
-                assert(set.find(idx) != set.end());
-                assert(set.find(idx) != set.end());
-            }
+            for (int i = 0; i < s.size(); i++)
+                for (int j = i + 1; j <= s.size(); j++) {
+                    auto set = tree.search({s.begin() + i, s.begin() + j});
+                    assert(set.find(idx) != set.end());
+                    assert(set.find(idx + sz) != set.end());
+                }
+        }
     }
 }
 
@@ -198,8 +204,8 @@ int main() {
     test_correctness();
     test_correctness_vec();
 
-    SuffixTree<std::string> tree;
-    std::string words[] = { "qwe", "rtyr", "uio", "pas", "dfg", "hjk", "lzx", "cvb", "bnm" };
+    SuffixTree<std::string, int> tree;
+    std::string words[] = {"qwe", "rtyr", "uio", "pas", "dfg", "hjk", "lzx", "cvb", "bnm"};
     int sz = 8;
 
     for (int idx = 0; idx < sz; idx++) {
@@ -212,7 +218,7 @@ int main() {
                 assert(set.find(idx) != set.end());
             }
 
-        for(int i = 0; i < sz; i++) {
+        for (int i = 0; i < sz; i++) {
             if (i == idx) continue;
             auto &s1 = words[i];
 

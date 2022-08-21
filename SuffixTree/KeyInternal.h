@@ -4,14 +4,15 @@
 
 template<typename T_Key>
 class KeyInternal {
-    /// Start and end (1 past last position) of a substring
-    using KeyConstIterator = typename T_Key::const_iterator;
-    using T_Element = typename T_Key::value_type;
 private:
-    KeyConstIterator begin_;
-    KeyConstIterator end_;
+    /// Start and end (1 past last position) of a substring
+    using const_iterator = typename T_Key::const_iterator;
+
+    const_iterator begin_;
+    const_iterator end_;
 
 public:
+    using value_type = typename T_Key::value_type;
     using size_type = typename T_Key::size_type;
 
     KeyInternal() = default;
@@ -19,7 +20,7 @@ public:
     KeyInternal(const T_Key &key)
             : begin_(std::cbegin(key)), end_(std::cend(key)) {}
 
-    KeyInternal(const KeyConstIterator &begin, const KeyConstIterator &end)
+    KeyInternal(const const_iterator &begin, const const_iterator &end)
             : begin_(begin), end_(end) {}
 
     KeyInternal(const KeyInternal &src) = default;
@@ -38,13 +39,13 @@ public:
         return this->has_prefix(other);
     }
 
-    inline KeyConstIterator begin() const { return begin_; }
+    inline const_iterator begin() const { return begin_; }
 
-    inline KeyConstIterator end() const { return end_; }
+    inline const_iterator end() const { return end_; }
 
-    inline KeyConstIterator iter_at(int idx) const { return this->begin() + idx; }
+    inline const_iterator iter_at(int idx) const { return this->begin() + idx; }
 
-    inline T_Element at(int idx) const { return *(this->begin() + idx); }
+    inline value_type at(int idx) const { return *(this->begin() + idx); }
 
     [[nodiscard]] inline size_type size(size_type from_idx = 0) const {
         const auto begin = std::next(this->begin(), from_idx);

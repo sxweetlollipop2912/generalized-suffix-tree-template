@@ -4,24 +4,30 @@
 
 #include "KeyInternal.h"
 
-template<typename T_Key>
+template<typename T_Key, typename T_Mapped>
 class Node;
 
-template<typename T_Key>
+template<typename T_Key, typename T_Mapped>
 class Edge {
+public:
+    using key_type = T_Key;
+    using mapped_type = T_Mapped;
+
 private:
-    Node<T_Key> *dest_ = nullptr;
+    using node_type = Node<key_type, mapped_type>;
+
+    node_type *dest_ = nullptr;
 
 public:
-    KeyInternal<T_Key> label;
+    key_type label;
 
     Edge() = default;
 
-    Edge(const KeyInternal<T_Key> label, Node<T_Key> *dest) : label{label}, dest_{dest} {}
+    Edge(const key_type label, node_type *dest) : label{label}, dest_{dest} {}
 
-    void set_dest(Node<T_Key> *node) { dest_ = node; }
+    void set_dest(node_type *node) { dest_ = node; }
 
-    Node<T_Key> const *dest() const { return dest_; }
+    node_type const *dest() const { return dest_; }
 
-    Node<T_Key> *dest() { return dest_; }
+    node_type *dest() { return dest_; }
 };

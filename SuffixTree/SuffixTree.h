@@ -8,25 +8,13 @@
 #include <set>
 
 #include "Node.h"
-#include "Utils.h"
 
-/**
- * An utility object, used to store the data returned by the SuffixTree.searchWithCount method.
- * It contains a collection of results and the total number of results present in the GST.
- * @see SuffixTree#searchWithCount(std::string, int)
- */
-struct SuffixResult {
-    /**
-     * The total number of results present in the database
-     */
-    int total;
-    /**
-    * The collection of (some) results present in the GST
-    */
-    std::set<int> results;
-
-    SuffixResult(int total, std::set<int> set) : total{total}, results{std::move(set)} {}
-};
+template<typename T_Key>
+static KeyInternal<T_Key> safe_cut_last_char(const KeyInternal<T_Key> &s) {
+    if (s.empty())
+        return s;
+    return s.substr(0, s.size() - 1);
+}
 
 /**
  * A Generalized Suffix Tree, based on the Ukkonen's paper "On-line construction of suffix trees"
@@ -55,50 +43,51 @@ struct SuffixResult {
  * See the search method for details.
  *
  * The union of all the edge labels from the root to a given leaf node denotes the set of the strings explicitly contained within the GST.
- * In addition to those Strings, there are a set of different strings that are implicitly contained within the GST, and it is composed of
+ * In addition to those strings, there are a set of different strings that are implicitly contained within the GST, and it is composed of
  * the strings built by concatenating e1.label + e2.label + ... + $end, where e1, e2, ... is a proper path and $end is prefix of any of
  * the labels of the edges starting from the last node of the path.
  *
  * This kind of "implicit path" is important in the testAndSplit method.
  *
  */
-template<typename T_Key>
+template<typename T_String, typename T_Mapped>
 class SuffixTree {
 public:
+    using key_type = KeyInternal<T_String>;
+    using mapped_type = T_Mapped;
+    using value_type = std::pair<key_type, mapped_type>;
     using size_type = std::size_t;
 
 private:
-    using T_Element = typename T_Key::value_type;
+    using element_type = typename key_type::value_type;
+    using node_type = Node<key_type, mapped_type>;
+    using edge_type = Edge<key_type, mapped_type>;
 
-    std::vector<Node<T_Key> *> all_nodes;
-    std::vector<Edge<T_Key> *> all_edges;
+    std::vector<node_type *> all_nodes;
+    std::vector<edge_type *> all_edges;
     /**
      * The root of the suffix tree
      */
-    Node<T_Key> *root;
-    /**
-     * The index of the last item that was added to the GST
-     */
-    int last;
+    node_type *root;
     /**
      * The last leaf that was added during the update operation
      */
-    Node<T_Key> *active_leaf;
+    node_type *active_leaf;
 
-    Node<T_Key> *make_node() {
-        all_nodes.push_back(new Node<T_Key>());
+    node_type *make_node() {
+        all_nodes.push_back(new node_type);
         return all_nodes.back();
     }
 
-    Edge<T_Key> *make_edge(const KeyInternal<T_Key> &label, Node<T_Key> *dest) {
-        all_edges.push_back(new Edge<T_Key>(label, dest));
+    edge_type *make_edge(const key_type &label, node_type *dest) {
+        all_edges.push_back(new edge_type(label, dest));
         return all_edges.back();
     }
 
     /**
      * Returns the tree node (if present) that corresponds to the given string.
      */
-    Node<T_Key> const *search_node(const KeyInternal<T_Key> &word) const {
+    node_type const *search_node(const T_String &word) const {
         /*
          * Verifies if exists a path from the root to a node such that the concatenation
          * of all the labels on the path is a super string of the given word.
@@ -131,30 +120,30 @@ private:
     }
 
     /**
-     * Return a (Node, String) (n, remainder) pair such that n is a farthest descendant of
-     * s (the input node) that can be reached by following a path of edges denoting
+     * Return a (Node, string) (n, remainder) pair such that n is a farthest descendant of
+     * input_node (the input node) that can be reached by following a path of edges denoting
      * a prefix of input and remainder will be string that must be
-     * appended to the concatenation of labels from s to n to get input.
+     * appended to the concatenation of labels from input_node to n to get input.
      */
-    std::pair<Node<T_Key> *, KeyInternal<T_Key>>
-    canonize(Node<T_Key> *node, KeyInternal<T_Key> input) {
+    std::pair<node_type *, key_type>
+    canonize(node_type *input_node, key_type input) {
         if (!input.empty()) {
-            auto edge = node->get_edge(*input.begin());
+            auto edge = input_node->get_edge(*input.begin());
 
             // descend the tree as long as a proper label is found
             while (edge && input.has_prefix(edge->label)) {
                 input = input.substr(edge->label.size());
-                node = edge->dest();
+                input_node = edge->dest();
                 if (!input.empty())
-                    edge = node->get_edge(*input.begin());
+                    edge = input_node->get_edge(*input.begin());
             }
         }
 
-        return std::make_pair(node, std::move(input));
+        return std::make_pair(input_node, std::move(input));
     }
 
     /**
-     * Tests whether the string part + t is contained in the subtree that has input as root.
+     * Tests whether the string part + t is contained in the subtree that has input_node as root.
      * If that's not the case, and there exists a path of edges e1, e2, ... such that
      *     e1.label + e2.label + ... + $end = part
      * and there is an edge g such that
@@ -163,23 +152,25 @@ private:
      * Then g will be split in two different edges, one having $end as label, and the other one
      * having rest as label.
      *
-     * @param input starting node
+     * @param input_node starting node
      * @param part the string to search
      * @param t the following character
      * @param remainder the remainder of the string to add to the index
      * @param value the value to add to the index
-     * @return a pair containing
-     *                  true/false depending on whether (part + t) is contained in the subtree starting in input
-     *                  the last node that can be reached by following the path denoted by part starting from input
+     * @return a pair containing:
+     *                  true/false depending on whether (part + t) is contained in the subtree starting in input_node
+     *                  the last node that can be reached by following the path denoted by part starting from input_node
      *
      */
-    std::pair<bool, Node<T_Key> *>
-    test_and_split(Node<T_Key> *input, const KeyInternal<T_Key> &part, const T_Element &t,
-                   const KeyInternal<T_Key> &remainder,
-                   int value) {
+    std::pair<bool, node_type *>
+    test_and_split(node_type *input_node,
+                   const key_type &part,
+                   const element_type &t,
+                   const key_type &remainder,
+                   mapped_type value) {
         // descend the tree as far as possible
-        auto[node, str] = canonize(input, part);
-        std::pair<bool, Node<T_Key> *> re;
+        auto[node, str] = canonize(input_node, part);
+        std::pair<bool, node_type *> re;
 
         if (!str.empty()) {
             auto edge = node->get_edge(*str.begin());
@@ -241,14 +232,14 @@ private:
     }
 
     /**
-     * Updates the tree starting from inputNode and by adding part.
+     * Updates the tree starting from input_node and by adding part.
      *
-     * Returns a reference (Node, String) pair for the string that has been added so far.
+     * Returns a reference (Node, string) pair for the string that has been added so far.
      * This means:
      * - the Node will be the Node that can be reached by the longest path string (S1)
      *   that can be obtained by concatenating consecutive edges in the tree and
      *   that is a substring of the string added so far to the tree.
-     * - the String will be the remainder that must be added to S1 to get the string
+     * - the string will be the remainder that must be added to S1 to get the string
      *   added so far.
      *
      * @param input_node the node to start from
@@ -256,9 +247,9 @@ private:
      * @param rest the rest of the string
      * @param value the value to add to the index
      */
-    std::pair<Node<T_Key> *, KeyInternal<T_Key>>
-    update(Node<T_Key> *input_node, const KeyInternal<T_Key> &part, const T_Element &new_char,
-           const KeyInternal<T_Key> &rest, int value) {
+    std::pair<node_type *, key_type>
+    update(node_type *input_node, const key_type &part, const element_type &new_char,
+           const key_type &rest, mapped_type value) {
         auto tmp_part = part;
         auto input = input_node;
 
@@ -270,7 +261,7 @@ private:
         auto old_root = root;
 
         while (!endpoint) {
-            Node<T_Key> *leaf;
+            node_type *leaf;
             auto tmp_edge = node->get_edge(new_char);
             if (tmp_edge)
                 // such a node is already present. This is one of the main differences from Ukkonen's case:
@@ -298,13 +289,13 @@ private:
                 tmp_part = tmp_part.substr(1);
             } else {
                 auto[node_, str] = canonize(input->get_suffix(),
-                                            Utils::safe_cut_last_char(tmp_part));
+                                            safe_cut_last_char(tmp_part));
                 input = node_;
-                tmp_part = KeyInternal<T_Key>(str.begin(), ++str.end());
+                tmp_part = {str.begin(), ++str.end()};
             }
 
             auto[endpoint_, node_] = test_and_split(input,
-                                                    Utils::safe_cut_last_char(tmp_part),
+                                                    safe_cut_last_char(tmp_part),
                                                     new_char,
                                                     rest,
                                                     value);
@@ -319,7 +310,7 @@ private:
     }
 
 public:
-    SuffixTree() : last{0} {
+    SuffixTree() {
         root = make_node();
         active_leaf = root;
     }
@@ -327,6 +318,21 @@ public:
     ~SuffixTree() {
         for (auto &e: all_nodes) delete e;
         for (auto &e: all_edges) delete e;
+    }
+
+    /**
+     * Searches for the given word within the GST and returns at most the given number of matches.
+     *
+     * @param word the key to search for
+     * @param count the max number of results to return
+     * @return at most <tt>results</tt> values for the given word
+     */
+    std::set<mapped_type> search(const T_String &word, int count) const {
+        auto tmp = search_node(word);
+
+        if (tmp)
+            return tmp->get_data(count);
+        return {};
     }
 
     /**
@@ -338,37 +344,8 @@ public:
      * @param word the key to search for
      * @return the collection of indexes associated with the input <tt>word</tt>
      */
-    std::set<int> search(const T_Key &word) const {
+    std::set<mapped_type> search(const T_String &word) const {
         return search(word, -1);
-    }
-
-    /**
-     * Searches for the given word within the GST and returns at most the given number of matches.
-     *
-     * @param word the key to search for
-     * @param count the max number of results to return
-     * @return at most <tt>results</tt> values for the given word
-     */
-    std::set<int> search(const T_Key &word, int count) const {
-        auto tmp = search_node(KeyInternal(word));
-
-        if (tmp)
-            return tmp->get_data(count);
-        return {};
-    }
-
-    /**
-     * Searches for the given word within the GST and returns at most the given number of matches.
-     *
-     * @param word the key to search for
-     * @param count the max number of results to return
-     * @return at most <tt>results</tt> values for the given word
-     * @see SuffixTree#ResultSuffix
-     */
-    SuffixResult search_with_count(const T_Key &word, int count) const {
-        auto tmp = search_node(KeyInternal(word));
-
-        return tmp ? SuffixResult(tmp->get_result_count(), tmp->get_data(count)) : SuffixResult(0, {});
     }
 
     /**
@@ -377,17 +354,11 @@ public:
      * Entries must be inserted so that their indexes are in non-decreasing order,
      * otherwise an IllegalStateException will be raised.
      *
-     * @param key the string key that will be added to the index
-     * @param idx the value that will be added to the index
-     * @throws std::runtime_error if an invalid index is passed as input
+     * @param string the string key that will be added to the index
+     * @param index the value that will be added to the index
      */
-    void put(const T_Key &key, int idx) {
-        if (idx < last) {
-            throw std::runtime_error("Input index must not be less than any of the previously inserted ones. Got " +
-                                     std::to_string(idx) + ", expected at least " + std::to_string(last));
-        }
-        last = idx;
-        KeyInternal<T_Key> key_it(key);
+    void put(const T_String &string, mapped_type index) {
+        key_type key(string);
 
         // reset active_leaf
         active_leaf = root;
@@ -395,13 +366,13 @@ public:
         // proceed with tree construction (closely related to procedure in
         // Ukkonen's paper)
         auto node = root;
-        KeyInternal<T_Key> text(key_it.begin(), key_it.begin());
+        key_type text(key.begin(), key.begin());
         // iterate over the string, one char at a time
-        for (int i = 0; i < key_it.size(); i++) {
-            text = KeyInternal<T_Key>(text.begin(), ++text.end());
+        for (auto i = 0; i < key.size(); i++) {
+            text = {text.begin(), ++text.end()};
 
             // update the tree with the new transitions due to this new char
-            auto active = update(node, KeyInternal(text), key_it.at(i), key_it.substr(i), idx);
+            auto active = update(node, KeyInternal(text), key.at(i), key.substr(i), index);
 
             // make sure the active pair is canonical
             active = canonize(active.first, active.second);
@@ -413,6 +384,4 @@ public:
         if (!active_leaf->get_suffix() && active_leaf != root && active_leaf != node)
             active_leaf->set_suffix(node);
     }
-
-    int compute_count() { return root->compute_and_cache_count(); }
 };
