@@ -43,28 +43,26 @@ public:
 
     inline const_iterator end() const { return end_; }
 
-    inline const_iterator iter_at(int idx) const { return this->begin() + idx; }
+    inline const_iterator iter_at(int idx) const { return std::next(this->begin(), idx); }
 
-    inline value_type at(int idx) const { return *(this->begin() + idx); }
+    inline value_type at(int idx) const { return *std::next(this->begin(), idx); }
 
     [[nodiscard]] inline size_type size(size_type from_idx = 0) const {
         const auto begin = std::next(this->begin(), from_idx);
         const auto end = this->end();
-        if (end <= begin) {
-            return 0;
-        }
+        auto size = std::distance(begin, end);
 
-        return end - begin;
+        return size < 0 ? 0 : size;
     }
 
     [[nodiscard]] inline bool empty() const {
-        return this->begin() >= this->end();
+        return std::distance(this->begin(), this->end()) <= 0;
     }
 
     inline KeyInternal substr(size_type from_idx) const {
         const auto start_used = std::next(this->begin(), from_idx);
         const auto key_end = this->end();
-        auto result = KeyInternal((start_used < key_end) ? start_used : key_end,
+        auto result = KeyInternal(std::distance(start_used, key_end) > 0 ? start_used : key_end,
                                   key_end);
 
         return result;
@@ -74,8 +72,8 @@ public:
         const auto start_used = std::next(this->begin(), from_idx);
         const auto end_used = std::next(start_used, len);
         const auto key_end = this->end();
-        auto result = KeyInternal((start_used < key_end) ? start_used : key_end,
-                                  (end_used < key_end) ? end_used : key_end);
+        auto result = KeyInternal(std::distance(start_used, key_end) > 0 ? start_used : key_end,
+                                  std::distance(end_used, key_end) > 0 ? end_used : key_end);
 
         return result;
     }
@@ -95,7 +93,7 @@ public:
     [[nodiscard]] T_Key debug(size_type pos = 0) const {
         const auto key_start = std::next(this->begin(), pos);
         const auto key_end = this->end();
-        if (key_end <= key_start) {
+        if (std::distance(key_start, key_end) <= 0) {
             return {};
         }
 

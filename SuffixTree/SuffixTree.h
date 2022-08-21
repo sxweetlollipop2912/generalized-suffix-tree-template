@@ -95,16 +95,16 @@ private:
             auto edge = node->get_edge(*it);
 
             if (edge) {
-                for (auto iw = it, il = edge->label.begin(); iw != word.end() && il < edge->label.end(); iw++, il++)
+                for (auto iw = it, il = edge->label.begin(); iw != word.end() && il != edge->label.end(); iw++, il++)
                     // *iw != *il
                     if (*iw < *il || *il < *iw)
                         // the label on the edge does not correspond to the one in the string to search
                         return nullptr;
 
-                if (edge->label.size() < word.end() - it) {
+                if (edge->label.size() < std::distance(it, word.end())) {
                     // advance to next node
                     node = edge->dest();
-                    it += edge->label.size() - 1;
+                    it = std::next(it, edge->label.size() - 1);
                 } else
                     // there is no edge starting with this char
                     return edge->dest();

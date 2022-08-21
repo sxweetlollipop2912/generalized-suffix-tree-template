@@ -58,28 +58,26 @@ public:
 
     inline const_iterator end() const { return end_; }
 
-    inline const_iterator iter_at(int idx) const { return this->begin() + idx; }
+    inline const_iterator iter_at(int idx) const { return std::next(this->begin(), idx); }
 
-    inline value_type at(int idx) const { return *(this->begin() + idx); }
+    inline value_type at(int idx) const { return *std::next(this->begin(), idx); }
 
     [[nodiscard]] inline size_type size(size_type from_idx = 0) const {
         const auto begin = std::next(this->begin(), from_idx);
         const auto end = this->end();
-        if (end <= begin) {
-            return 0;
-        }
+        auto size = std::distance(begin, end);
 
-        return end - begin;
+        return size < 0 ? 0 : size;
     }
 
     [[nodiscard]] inline bool empty() const {
-        return this->begin() >= this->end();
+        return std::distance(this->begin(), this->end()) <= 0;
     }
 
     inline KeyInternal substr(size_type from_idx) const {
         const auto start_used = std::next(this->begin(), from_idx);
         const auto key_end = this->end();
-        auto result = KeyInternal((start_used < key_end) ? start_used : key_end,
+        auto result = KeyInternal(std::distance(start_used, key_end) > 0 ? start_used : key_end,
                                   key_end);
 
         return result;
@@ -89,8 +87,8 @@ public:
         const auto start_used = std::next(this->begin(), from_idx);
         const auto end_used = std::next(start_used, len);
         const auto key_end = this->end();
-        auto result = KeyInternal((start_used < key_end) ? start_used : key_end,
-                                  (end_used < key_end) ? end_used : key_end);
+        auto result = KeyInternal(std::distance(start_used, key_end) > 0 ? start_used : key_end,
+                                  std::distance(end_used, key_end) > 0 ? end_used : key_end);
 
         return result;
     }
@@ -110,7 +108,7 @@ public:
     [[nodiscard]] T_Key debug(size_type pos = 0) const {
         const auto key_start = std::next(this->begin(), pos);
         const auto key_end = this->end();
-        if (key_end <= key_start) {
+        if (std::distance(key_start, key_end) <= 0) {
             return {};
         }
 
@@ -186,7 +184,7 @@ private:
         }
     }
 
-    bool add_index(mapped_type idx) {
+    bool add_index(const mapped_type &idx) {
         if (data_.find(idx) != data_.end())
             return false;
 
@@ -195,9 +193,7 @@ private:
     }
 
 public:
-    SuffixNode() : suffix_{nullptr} {
-        edges_.clear();
-    }
+    SuffixNode() : suffix_{nullptr} {}
 
     [[nodiscard]] std::set<mapped_type> get_data() const {
         return get_data(-1);
@@ -210,7 +206,7 @@ public:
         return set;
     }
 
-    bool add_ref(mapped_type idx) {
+    bool add_ref(const mapped_type &idx) {
         if (!add_index(idx))
             return false;
 
@@ -222,7 +218,7 @@ public:
     void add_edge(const element_type &c, edge_type *e) { edges_[c] = e; }
 
     edge_type const *get_edge(const element_type &c) const {
-        return edges_.contains(c) ? edges_.at(c) : nullptr;
+        return edges_.find(c) != edges_.end() ? edges_.at(c) : nullptr;
     }
 
     edge_type *get_edge(const element_type &c) {
@@ -276,11 +272,12 @@ public:
     using key_type = KeyInternal<T_String>;
     using mapped_type = T_Mapped;
     using value_type = std::pair<key_type, mapped_type>;
+    using size_type = std::size_t;
 
 private:
     using element_type = typename key_type::value_type;
-    using edge_type = SuffixEdge<key_type, mapped_type>;
     using node_type = SuffixNode<key_type, mapped_type>;
+    using edge_type = SuffixEdge<key_type, mapped_type>;
 
     std::vector<node_type *> all_nodes;
     std::vector<edge_type *> all_edges;
@@ -319,16 +316,16 @@ private:
             auto edge = node->get_edge(*it);
 
             if (edge) {
-                for (auto iw = it, il = edge->label.begin(); iw != word.end() && il < edge->label.end(); iw++, il++)
+                for (auto iw = it, il = edge->label.begin(); iw != word.end() && il != edge->label.end(); iw++, il++)
                     // *iw != *il
                     if (*iw < *il || *il < *iw)
                         // the label on the edge does not correspond to the one in the string to search
                         return nullptr;
 
-                if (edge->label.size() < word.end() - it) {
+                if (edge->label.size() < std::distance(it, word.end())) {
                     // advance to next node
                     node = edge->dest();
-                    it += edge->label.size() - 1;
+                    it = std::next(it, edge->label.size() - 1);
                 } else
                     // there is no edge starting with this char
                     return edge->dest();
