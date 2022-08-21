@@ -2,10 +2,12 @@
 
 [Original implementation in Java](https://github.com/abahgat/suffixtree).
 <br>
-Referencing with this [c++ implementation](https://github.com/murraycu/murrayc-suffix-tree/tree/ukkonen) (suffix tree on
+Referencing with this [C++ implementation](https://github.com/murraycu/murrayc-suffix-tree/tree/ukkonen) (suffix tree on
 one string).
 
 You can find details of this version of Ukkonen's algorithm at the original repo.
+
+There is an all-in-one header at root directory.
 
 ### More features were added
 
