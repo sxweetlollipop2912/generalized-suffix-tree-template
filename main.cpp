@@ -2,8 +2,11 @@
 #include <cstdlib>
 #include <ctime>
 #include <chrono>
+#include <vector>
 
 #include "SuffixTree/SuffixTree.h"
+//#include "SuffixTree.h"
+
 
 using std::chrono::high_resolution_clock;
 using std::chrono::duration_cast;
