@@ -7,7 +7,7 @@
 #include <iostream>
 #include <set>
 
-#include "Node.h"
+#include "SuffixNode.h"
 
 template<typename T_Key>
 static KeyInternal<T_Key> safe_cut_last_char(const KeyInternal<T_Key> &s) {
@@ -60,8 +60,8 @@ public:
 
 private:
     using element_type = typename key_type::value_type;
-    using node_type = Node<key_type, mapped_type>;
-    using edge_type = Edge<key_type, mapped_type>;
+    using node_type = SuffixNode<key_type, mapped_type>;
+    using edge_type = SuffixEdge<key_type, mapped_type>;
 
     std::vector<node_type *> all_nodes;
     std::vector<edge_type *> all_edges;

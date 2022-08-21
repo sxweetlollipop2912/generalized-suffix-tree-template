@@ -6,10 +6,10 @@
 #include <map>
 #include <set>
 
-#include "Edge.h"
+#include "SuffixEdge.h"
 
 template<typename T_Key, typename T_Mapped>
-class Node {
+class SuffixNode {
     template<typename T1, typename T2> friend
     class SuffixTree;
 
@@ -19,9 +19,9 @@ public:
 
 private:
     using element_type = typename key_type::value_type;
-    using edge_type = Edge<key_type, mapped_type>;
+    using edge_type = SuffixEdge<key_type, mapped_type>;
 
-    Node *suffix_;
+    SuffixNode *suffix_;
 
     std::set<mapped_type> data_;
     std::map<element_type, edge_type *> edges_;
@@ -53,7 +53,7 @@ private:
     }
 
 public:
-    Node() : suffix_{nullptr} {
+    SuffixNode() : suffix_{nullptr} {
         edges_.clear();
     }
 
@@ -87,9 +87,9 @@ public:
         return edges_.find(c) != edges_.end() ? edges_.at(c) : nullptr;
     }
 
-    Node const *get_suffix() const { return this->suffix_; }
+    SuffixNode const *get_suffix() const { return this->suffix_; }
 
-    Node *get_suffix() { return this->suffix_; }
+    SuffixNode *get_suffix() { return this->suffix_; }
 
-    void set_suffix(Node *suffix) { this->suffix_ = suffix; }
+    void set_suffix(SuffixNode *suffix) { this->suffix_ = suffix; }
 };

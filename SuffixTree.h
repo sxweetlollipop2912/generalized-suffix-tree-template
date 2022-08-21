@@ -12,10 +12,10 @@ template<typename T_Key>
 class KeyInternal;
 
 template<typename T_Key, typename T_Mapped>
-class Edge;
+class SuffixEdge;
 
 template<typename T_Key, typename T_Mapped>
-class Node;
+class SuffixNode;
 
 template<typename T_String, typename T_Mapped>
 class SuffixTree;
@@ -129,22 +129,22 @@ static KeyInternal<T_Key> safe_cut_last_char(const KeyInternal<T_Key> &s) {
 }
 
 template<typename T_Key, typename T_Mapped>
-class Edge {
+class SuffixEdge {
 public:
     using key_type = T_Key;
     using mapped_type = T_Mapped;
 
 private:
-    using node_type = Node<key_type, mapped_type>;
+    using node_type = SuffixNode<key_type, mapped_type>;
 
     node_type *dest_ = nullptr;
 
 public:
     key_type label;
 
-    Edge() = default;
+    SuffixEdge() = default;
 
-    Edge(const key_type label, node_type *dest) : label{label}, dest_{dest} {}
+    SuffixEdge(const key_type label, node_type *dest) : label{label}, dest_{dest} {}
 
     void set_dest(node_type *node) { dest_ = node; }
 
@@ -154,7 +154,7 @@ public:
 };
 
 template<typename T_Key, typename T_Mapped>
-class Node {
+class SuffixNode {
     template<typename T1, typename T2> friend
     class SuffixTree;
 
@@ -164,9 +164,9 @@ public:
 
 private:
     using element_type = typename key_type::value_type;
-    using edge_type = Edge<key_type, mapped_type>;
+    using edge_type = SuffixEdge<key_type, mapped_type>;
 
-    Node *suffix_;
+    SuffixNode *suffix_;
 
     std::set<mapped_type> data_;
     std::map<element_type, edge_type *> edges_;
@@ -198,7 +198,7 @@ private:
     }
 
 public:
-    Node() : suffix_{nullptr} {
+    SuffixNode() : suffix_{nullptr} {
         edges_.clear();
     }
 
@@ -232,11 +232,11 @@ public:
         return edges_.find(c) != edges_.end() ? edges_.at(c) : nullptr;
     }
 
-    Node const *get_suffix() const { return this->suffix_; }
+    SuffixNode const *get_suffix() const { return this->suffix_; }
 
-    Node *get_suffix() { return this->suffix_; }
+    SuffixNode *get_suffix() { return this->suffix_; }
 
-    void set_suffix(Node *suffix) { this->suffix_ = suffix; }
+    void set_suffix(SuffixNode *suffix) { this->suffix_ = suffix; }
 };
 
 /**
@@ -282,8 +282,8 @@ public:
 
 private:
     using element_type = typename key_type::value_type;
-    using edge_type = Edge<key_type, mapped_type>;
-    using node_type = Node<key_type, mapped_type>;
+    using edge_type = SuffixEdge<key_type, mapped_type>;
+    using node_type = SuffixNode<key_type, mapped_type>;
 
     std::vector<node_type *> all_nodes;
     std::vector<edge_type *> all_edges;

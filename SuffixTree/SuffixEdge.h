@@ -5,25 +5,25 @@
 #include "KeyInternal.h"
 
 template<typename T_Key, typename T_Mapped>
-class Node;
+class SuffixNode;
 
 template<typename T_Key, typename T_Mapped>
-class Edge {
+class SuffixEdge {
 public:
     using key_type = T_Key;
     using mapped_type = T_Mapped;
 
 private:
-    using node_type = Node<key_type, mapped_type>;
+    using node_type = SuffixNode<key_type, mapped_type>;
 
     node_type *dest_ = nullptr;
 
 public:
     key_type label;
 
-    Edge() = default;
+    SuffixEdge() = default;
 
-    Edge(const key_type label, node_type *dest) : label{label}, dest_{dest} {}
+    SuffixEdge(const key_type label, node_type *dest) : label{label}, dest_{dest} {}
 
     void set_dest(node_type *node) { dest_ = node; }
 
