@@ -23,9 +23,9 @@ public:
 
     SuffixEdge() = default;
 
-    SuffixEdge(const key_type label, node_type *dest) : label{label}, dest_{dest} {}
+    SuffixEdge(const key_type label, node_type *dest) : label{std::move(label)}, dest_{std::move(dest)} {}
 
-    void set_dest(node_type *node) { dest_ = node; }
+    void set_dest(node_type *node) { dest_ = std::move(node); }
 
     node_type const *dest() const { return dest_; }
 

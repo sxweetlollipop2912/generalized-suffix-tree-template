@@ -1,11 +1,6 @@
 #pragma once
 
-#include <string>
 #include <utility>
-#include <algorithm>
-#include <stdexcept>
-#include <iostream>
-#include <set>
 
 #include "SuffixNode.h"
 

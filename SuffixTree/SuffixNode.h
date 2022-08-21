@@ -1,8 +1,5 @@
 #pragma once
 
-#include <vector>
-#include <stdexcept>
-#include <functional>
 #include <map>
 #include <set>
 
@@ -44,7 +41,7 @@ private:
         }
     }
 
-    bool add_index(mapped_type idx) {
+    bool add_index(const mapped_type &idx) {
         if (data_.find(idx) != data_.end())
             return false;
 
@@ -53,9 +50,7 @@ private:
     }
 
 public:
-    SuffixNode() : suffix_{nullptr} {
-        edges_.clear();
-    }
+    SuffixNode() : suffix_{nullptr} {}
 
     [[nodiscard]] std::set<mapped_type> get_data() const {
         return get_data(-1);
@@ -68,7 +63,7 @@ public:
         return set;
     }
 
-    bool add_ref(mapped_type idx) {
+    bool add_ref(const mapped_type &idx) {
         if (!add_index(idx))
             return false;
 
@@ -80,7 +75,7 @@ public:
     void add_edge(const element_type &c, edge_type *e) { edges_[c] = e; }
 
     edge_type const *get_edge(const element_type &c) const {
-        return edges_.contains(c) ? edges_.at(c) : nullptr;
+        return edges_.find(c) != edges_.end() ? edges_.at(c) : nullptr;
     }
 
     edge_type *get_edge(const element_type &c) {
