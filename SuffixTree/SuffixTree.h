@@ -101,7 +101,8 @@ private:
 
             if (edge) {
                 for (auto iw = it, il = edge->label.begin(); iw != word.end() && il < edge->label.end(); iw++, il++)
-                    if (*iw != *il)
+                    // *iw != *il
+                    if (*iw < *il || *il < *iw)
                         // the label on the edge does not correspond to the one in the string to search
                         return nullptr;
 
@@ -177,7 +178,11 @@ private:
             auto &label = edge->label;
 
             // must see whether "str" is substring of the label of an edge
-            if (label.size() > str.size() && *(label.iter_at(str.size())) == t)
+            if (label.size() > str.size() &&
+                // label[str.size()] == t
+                // Strictly use operator < as label[str.size()] and t might be custom objects.
+                !(*(label.iter_at(str.size())) < t) &&
+                !(t < *(label.iter_at(str.size()))))
 
                 re = std::make_pair(true, node);
             else {

@@ -86,7 +86,8 @@ public:
         const auto prefix_begin = std::next(prefix.begin(), prefix_begin_idx);
         const auto prefix_end = prefix.end();
         const auto iters = std::mismatch(std::next(this->begin(), str_begin_idx), this->end(),
-                                         prefix_begin, prefix_end);
+                                         prefix_begin, prefix_end,
+                                         [](const auto &e1, const auto &e2) { return !(e1 < e2) && !(e2 < e1); });
 
         return iters.second == prefix_end;
     }

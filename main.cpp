@@ -199,10 +199,97 @@ void test_correctness_vec() {
     }
 }
 
+void test_correctness_vec_custom_obj() {
+    srand(time(nullptr));
+    int sz = 100;
+    int max_len = 100;
+    std::cout << "Remember to set to debug.\nConfiguration: " << sz << " strings, " << max_len
+              << " chars max. 26 lowercase letters.\n";
+
+    int test = 20;
+
+    struct Obj {
+        int x;
+        int y;
+        int z;
+
+        bool operator<(const Obj &other) const {
+            if (x != other.x) return x < other.x;
+            if (y != other.y) return y < other.y;
+            return z < other.z;
+        }
+    };
+    struct Idx {
+        int x, y, z;
+
+        bool operator<(const Idx &other) const {
+            if (x != other.x) return x < other.x;
+            if (y != other.y) return y < other.y;
+            return z < other.z;
+        }
+    };
+
+    for (int t = 1; t <= test; t++) {
+        std::cout << "TEST " << t << '\n';
+
+        SuffixTree<std::vector<Obj>, Idx> tree;
+
+        std::vector<std::vector<Obj>> words;
+        int cnt = 0;
+        for (int i = 0; i < sz; i++) {
+            int len = rand() % max_len + 1;
+            words.emplace_back();
+            for (int j = 0; j < len; j++) {
+                int x = rand() % 200;
+                int y = rand() % 200;
+                int z = rand() % 200;
+                words.back().push_back({x, y, z});
+            }
+
+            cnt += len;
+        }
+
+        std::cout << cnt << '\n';
+
+        for (int idx = 0; idx < sz; idx++) {
+            auto &s = words[idx];
+            tree.put(s, {idx, idx, idx});
+
+            for (int i = 0; i < s.size(); i++)
+                for (int j = i + 1; j <= s.size(); j++) {
+                    auto set = tree.search({s.begin() + i, s.begin() + j});
+                    assert(set.find({idx, idx, idx}) != set.end());
+                }
+        }
+
+        for (int idx = 0; idx < sz; idx++) {
+            auto &s = words[idx];
+            for (int i = 0; i < s.size(); i++)
+                for (int j = i + 1; j <= s.size(); j++) {
+                    auto set = tree.search({s.begin() + i, s.begin() + j});
+                    assert(set.find({idx, idx, idx}) != set.end());
+                }
+        }
+
+        for (int idx = 0; idx < sz; idx++) {
+            auto &s = words[idx];
+            tree.put(s, {idx + sz, idx + sz, idx + sz});
+
+            for (int i = 0; i < s.size(); i++)
+                for (int j = i + 1; j <= s.size(); j++) {
+                    auto set = tree.search({s.begin() + i, s.begin() + j});
+                    assert(set.find({idx, idx, idx}) != set.end());
+                    assert(set.find({idx + sz, idx + sz, idx + sz}) != set.end());
+                }
+        }
+    }
+}
+
 int main() {
-    //test_speed();
-    test_correctness();
-    test_correctness_vec();
+    test_speed();
+    //test_correctness();
+    //test_correctness_vec();
+    //test_correctness_vec_custom_obj();
 
     SuffixTree<std::string, int> tree;
     std::string words[] = {"qwe", "rtyr", "uio", "pas", "dfg", "hjk", "lzx", "cvb", "bnm"};
