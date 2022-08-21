@@ -10,8 +10,8 @@ You can find details of this version of Ukkonen's algorithm at the original repo
 ### More features were added
 
 - Allow any type of list (with some requirements), not limited to string. Those requirements are:
-    1. Typename `value_type` (type of elements), `size_type` and `const_iterator` is defined and public.
-    2. Support of `fast random access` is preferred (or expect drastic decrease in performance). `begin` and `end` must
+    1. Typename `value_type` (type of elements), `size_type` and `const_iterator` are defined and public.
+    2. Support of `fast random access` is preferred (or expect drastic decrease in performance). `begin` and `end` iterator must
        meet `LegacyInputIterator` at minimum (for std::next, std::distance).
 - Allow custom data type as element, as long as
     - `< operator` is defined.
