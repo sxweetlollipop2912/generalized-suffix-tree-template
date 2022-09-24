@@ -11,7 +11,7 @@ There is an all-in-one header at root directory.
 
 ### Operations
 - `put(list, index)`: adds a `list` (not limited to string) associated with an `index` (not limited to int) to the tree. `index` will be returned at later retrievals.
-- `search(sub-list)`: returns a `std::set` of `indexes`, which the lists associated with contain `sub-list`.
+- `search(sub-list)`: returns a std::set of `indexes`, which the lists associated with contain `sub-list`.
 
 ### Example
 More examples in `main.cpp`.
@@ -25,7 +25,7 @@ for (int idx = 0; idx < words.size(); idx++) {
 }
 
 for (int idx = 0; idx < words.size(); idx++) {
-    set result = tree.search(s.substr(1, 2));
+    set result = tree.search(word[idx].substr(1, 2));
     assert(result.find(idx) != result.end());
 }
 ```
