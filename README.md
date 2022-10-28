@@ -5,20 +5,20 @@
 Referencing with this [C++ implementation](https://github.com/murraycu/murrayc-suffix-tree/tree/ukkonen) (suffix tree on
 one string).
 
-You can find details of this version of Ukkonen's algorithm at the original repo.
+There is an all-in-one header `SuffixTree.h` at root directory.
 
-There is an all-in-one header at root directory.
+All details regarding the algorithm is at the original repo.
 
 ### Operations
 - `put(list, index)`: adds a `list` (not limited to string) associated with an `index` (not limited to int) to the tree. `index` will be returned at later retrievals.
-- `search(sub-list)`: returns a std::set of `indexes`, which the lists associated with contain `sub-list`.
+- `search(sub-list)`: returns a std::set of `indexes` of the lists containing `sub-list`.
 
 ### Example
 More examples in `main.cpp`.
 ``` c++
 vector<string> words = {"qwe", "rtyr", "uio", "pas", "dfg", "hjk", "lzx", "cvb", "bnm"};
 
-SuffixTree<std::string, int> tree;
+SuffixTree<string, int> tree;
 
 for (int idx = 0; idx < words.size(); idx++) {
     tree.put(words[idx], idx);
@@ -26,11 +26,12 @@ for (int idx = 0; idx < words.size(); idx++) {
 
 for (int idx = 0; idx < words.size(); idx++) {
     set result = tree.search(word[idx].substr(1, 2));
+    // found!
     assert(result.find(idx) != result.end());
 }
 ```
 
-### Added features (compared to the original)
+### Added features
 
 - Allow any type of list, not limited to string, with some requirements:
     1. Typename `value_type` (type of elements), `size_type` and `const_iterator` are defined and public.
@@ -46,6 +47,6 @@ for (int idx = 0; idx < words.size(); idx++) {
 
 - Requires *C++11* at minimum.
 
-- In a sense, this suffix tree is similar to a map, where key is the list, value is the index, and search condition is different.
+- In a sense, this suffix tree is similar to a map, where key is the list, value is the index, but search condition is different.
 
 -  This template is originally created to help perform search queries in a dictionary.
