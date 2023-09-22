@@ -5,10 +5,10 @@
 Referencing with [C++ implementation](https://github.com/murraycu/murrayc-suffix-tree/tree/ukkonen) (suffix tree on
 one string).
 
-There is an all-in-one header `SuffixTree.h`.
+All-in-one header: `SuffixTree.h`.
 
 ### Operations
-- `put(list, value)`: adds a `list` associated with an `value` to the tree. `value` will be returned at later retrievals.
+- `put(list, value)`: adds a `list` associated with a `value`. `value` will be returned at later retrievals.
 - `search(sub-list)`: returns a std::set of `values` of the lists containing `sub-list`.
 
 ### Example
@@ -29,18 +29,18 @@ for (int idx = 0; idx < words.size(); idx++) {
 }
 ```
 
-### Added features
+### New features
 
 - Allow any type of `sequence container` as `list`, if:
-    1. Typename `value_type` (type of elements), `size_type` and `const_iterator` are public.
-    2. `begin` and `end` iterator must meet `LegacyInputIterator` at minimum (for std::next, std::distance). Support of fast random access is preferred for performance.
-- Allow custom type as element if
+    1. Typename `value_type` (type of list elements), `size_type` and `const_iterator` are public.
+    2. `begin` and `end` iterator must meet `LegacyInputIterator` at minimum.
+- Allow custom type as list element if
     - `< operator` is defined.
 - Allow custom type as `value` if
     - `< operator` is defined.
 
 ### Misc
-- DO NOT DESTROY the lists, as they are only stored as begin and end iterators in the tree.
+- DO NOT DESTROY the lists. They are only stored as begin and end iterators in the tree.
 
 - Requires C++11 at minimum.
 
