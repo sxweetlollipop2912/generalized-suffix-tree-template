@@ -1,6 +1,6 @@
 # Generalized Suffix Tree in C++
 
-[Original implementation in Java](https://github.com/abahgat/suffixtree).
+Enhancing the [original implementation in Java](https://github.com/abahgat/suffixtree).
 <br>
 Referencing with [C++ implementation](https://github.com/murraycu/murrayc-suffix-tree/tree/ukkonen) (suffix tree on
 one string).
