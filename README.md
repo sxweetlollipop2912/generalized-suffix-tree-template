@@ -38,7 +38,7 @@ for (int idx = 0; idx < words.size(); idx++) {
     - Typename `value_type` (type of list elements), `size_type` and `const_iterator` are public.
     - `begin` and `end` iterator must meet `LegacyInputIterator` at minimum.
 
-This means you can search on C++ std containers like `std::vector`. Other std containers may be applicable as well, but I haven't checked.
+This means you can search on C++ std containers like `std::vector` and `std::list`. Other std containers may be applicable as well, but I haven't checked.
 
 2. If you use a container other than string, the element type must satisfy:
     - `< operator` is defined (so that Suffix Tree can operate on it)
