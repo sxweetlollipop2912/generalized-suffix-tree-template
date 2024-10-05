@@ -5,7 +5,7 @@ Enhancing the [original implementation in Java](https://github.com/abahgat/suffi
 Referencing with [C++ implementation](https://github.com/murraycu/murrayc-suffix-tree/tree/ukkonen) (suffix tree on
 one string).
 
-All-in-one header: `SuffixTree.h`.
+All-in-one header: [`SuffixTree.h`](https://github.com/sxweetlollipop2912/suffix-tree-template/blob/main/SuffixTree.h).
 
 ### Operations
 - `put(list, value)`: adds a `list` associated with a `value`. `value` will be returned at later retrievals.
